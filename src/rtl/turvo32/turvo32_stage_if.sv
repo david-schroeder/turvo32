@@ -34,12 +34,22 @@ module turvo32_stage_if
     //         //
     /////////////
 
+    logic        valid_if;
+
     logic [31:0] pc_d, pc_if;
     logic [31:0] pc_seq;
     logic        is_first_cycle;
 
     reg   [31:0] instr_mem [8191:0];
     logic [31:0] instr_if;
+
+    // FTQ
+    logic        ftq_ready;
+    logic        ftq_bus_valid;
+    logic        ftq_bus_ready;
+    logic [ 1:0] ftq_src_h2d;
+    logic [ 1:0] ftq_src_d2h;
+    logic [31:0] ftq_bus_data;
 
     /////////////
     //         //
@@ -53,7 +63,7 @@ module turvo32_stage_if
             instr_if       <= '0;
             is_first_cycle <= '1;
         end else begin
-            if (ns_ready_i) begin
+            if (ftq_ready) begin
                 pc_if          <= pc_d;
                 instr_if       <= instr_mem[pc_d[31:2]];
                 is_first_cycle <= '0;
@@ -67,12 +77,10 @@ module turvo32_stage_if
     //             //
     /////////////////
 
-    assign ns_valid_o = ~is_first_cycle & ~invalidate_i;
+    assign valid_if = ~is_first_cycle & ~invalidate_i;
 
     assign pc_seq   = pc_if + 4;
-    assign pc_seq_o = pc_seq;
-    assign pc_o     = pc_if;
-    assign instr_o  = instr_if;
+    assign pc_seq_o = pc_o + 4;
 
     always_comb begin
         unique case (1'b1)
@@ -82,15 +90,47 @@ module turvo32_stage_if
         endcase
     end
 
-    // TODO: replace with bus-based instruction fetch system
+    assign ftq_bus_valid = ibus_i.d_valid;
+    assign ftq_src_d2h   = ibus_i.d_source;
+    assign ftq_bus_data  = ibus_i.d_data;
+
     assign ibus_o = '{
+        a_valid: valid_if && ftq_ready,
         a_opcode: Get,
+        a_address: pc_if,
+        a_source: ftq_src_h2d,
+        a_size: 2'h2,
+        a_mask: 4'hF,
+        d_ready: ftq_bus_ready,
         default : '0
     };
 
-    `define STRINGIFY(x) `"x`"
-    initial begin
-        $readmemh(`STRINGIFY(`INIT_MEM_FILE), instr_mem);
-    end
+    ///////////////////
+    //               //
+    // Instantiation //
+    //               //
+    ///////////////////
+
+    /* Fetch Target Queue */
+
+    turvo32_ftq ftq_i (
+        .clk_i,
+        .rst_ni,
+
+        .req_address_i(pc_if),
+        .req_valid_i  (valid_if && ftq_ready),
+        .req_ready_o  (ftq_ready),
+
+        .rsp_address_o(pc_o),
+        .rsp_data_o   (instr_o),
+        .rsp_valid_o  (ns_valid_o),
+        .rsp_ready_i  (ns_ready_i),
+
+        .bus_valid_i  (ftq_bus_valid),
+        .bus_ready_o  (ftq_bus_ready),
+        .bus_src_i    (ftq_src_d2h),
+        .bus_src_o    (ftq_src_h2d),
+        .bus_data_i   (ftq_bus_data)
+    );
 
 endmodule

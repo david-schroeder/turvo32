@@ -53,12 +53,15 @@ module turvo32_ftq
 	assign bus_handshake    = bus_valid_i && bus_ready_o;
 	assign bus_matches_rptr = bus_src_i == rptr;
 	assign bus_rsp_direct   = bus_handshake && bus_matches_rptr;
+	// TODO: check if waiting for subsequent stages might cause a deadlock
 	assign bus_ready_o      = bus_matches_rptr ? rsp_ready_i : '1;
 	assign bus_src_o        = wptr;
 
-	assign req_ready_o = rptr != wptr                                    // Buffer not at HWM / full
-	                  || !(entry_valid_q[rptr] || entry_pending_q[rptr]) // HWM but not full
-	                  || rsp_handshake;                                  // full but advancing rptr
+	// We're intentionally never ready when the buffer is full:
+	// It would theoretically be possible to allow a request if a response arrives in the same
+	// cycle, but TileLink explicitly forbids gating request validation on a same-cycle response.
+	assign req_ready_o = rptr != wptr                                     // Buffer not at HWM / full
+	                  || !(entry_valid_q[rptr] || entry_pending_q[rptr]); // HWM but not full
 
 	assign rsp_valid_o   = bus_rsp_direct ? '1 : entry_valid_q[rptr];
 	assign rsp_data_o    = bus_rsp_direct ? bus_data_i : entry_data[rptr];
