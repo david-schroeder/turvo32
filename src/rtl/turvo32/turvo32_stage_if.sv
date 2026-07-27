@@ -40,9 +40,6 @@ module turvo32_stage_if
     logic [31:0] pc_seq;
     logic        is_first_cycle;
 
-    reg   [31:0] instr_mem [8191:0];
-    logic [31:0] instr_if;
-
     // FTQ
     logic        ftq_ready;
     logic        ftq_bus_valid;
@@ -60,12 +57,10 @@ module turvo32_stage_if
     always_ff @(posedge clk_i or negedge rst_ni) begin
         if (~rst_ni) begin
             pc_if          <= BOOT_ADDR;
-            instr_if       <= '0;
             is_first_cycle <= '1;
         end else begin
-            if (ftq_ready) begin
+            if (ftq_ready && (!ibus_o.a_valid || ibus_i.a_ready)) begin
                 pc_if          <= pc_d;
-                instr_if       <= instr_mem[pc_d[31:2]];
                 is_first_cycle <= '0;
             end
         end
@@ -117,8 +112,10 @@ module turvo32_stage_if
         .clk_i,
         .rst_ni,
 
+        .invalidate_i,
+
         .req_address_i(pc_if),
-        .req_valid_i  (valid_if && ftq_ready),
+        .req_valid_i  (valid_if && ftq_ready && ibus_i.a_ready),
         .req_ready_o  (ftq_ready),
 
         .rsp_address_o(pc_o),

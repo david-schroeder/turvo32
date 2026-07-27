@@ -13,8 +13,10 @@ module turvo32_ftq
 	input  logic clk_i,
 	input  logic rst_ni,
 
+	input  logic invalidate_i,
+
 	input  logic [        31:0] req_address_i,
-	input  logic                req_valid_i,
+	input  logic                req_valid_i, // request transaction this cycle
 	output logic                req_ready_o,
 
 	output logic [        31:0] rsp_address_o,
@@ -38,7 +40,6 @@ module turvo32_ftq
 	logic [ENTRY_AW-1:0] rptr;
 	logic [ENTRY_AW-1:0] wptr;
 
-	logic req_handshake;
 	logic rsp_handshake;
 
 	logic bus_handshake;
@@ -47,7 +48,6 @@ module turvo32_ftq
 
 	logic is_same_cyc_rsp;
 
-	assign req_handshake = req_valid_i && req_ready_o;
 	assign rsp_handshake = rsp_valid_o && rsp_ready_i;
 
 	assign bus_handshake    = bus_valid_i && bus_ready_o;
@@ -57,15 +57,17 @@ module turvo32_ftq
 	assign bus_ready_o      = bus_matches_rptr ? rsp_ready_i : '1;
 	assign bus_src_o        = wptr;
 
+	assign is_same_cyc_rsp = bus_handshake && req_valid_i && bus_src_o == bus_src_i;
+
 	// We're intentionally never ready when the buffer is full:
 	// It would theoretically be possible to allow a request if a response arrives in the same
 	// cycle, but TileLink explicitly forbids gating request validation on a same-cycle response.
 	assign req_ready_o = rptr != wptr                                     // Buffer not at HWM / full
 	                  || !(entry_valid_q[rptr] || entry_pending_q[rptr]); // HWM but not full
 
-	assign rsp_valid_o   = bus_rsp_direct ? '1 : entry_valid_q[rptr];
+	assign rsp_valid_o   = (bus_rsp_direct ? entry_pending_q[rptr] : entry_valid_q[rptr]) && !invalidate_i;
 	assign rsp_data_o    = bus_rsp_direct ? bus_data_i : entry_data[rptr];
-	assign rsp_address_o = entry_valid_q[rptr] ? entry_addrs[rptr] : req_address_i;
+	assign rsp_address_o = is_same_cyc_rsp ? req_address_i : entry_addrs[rptr];
 
 	/* State update logic */
 
@@ -73,12 +75,17 @@ module turvo32_ftq
 		entry_pending_d = entry_pending_q;
 		entry_valid_d   = entry_valid_q;
 
-		if (req_handshake) entry_pending_d[wptr] = '1;
-		if (bus_handshake) begin
+		if (req_valid_i) entry_pending_d[wptr] = '1;
+		if (bus_handshake && entry_pending_d[bus_src_i]) begin
 			entry_pending_d[bus_src_i] = '0;
 			entry_valid_d[bus_src_i] = '1;
 		end
 		if (rsp_handshake) entry_valid_d[rptr] = '0;
+
+		if (invalidate_i) begin
+			entry_pending_d = '0;
+			entry_valid_d = '0;
+		end
 	end
 
 	always_ff @(posedge clk_i or negedge rst_ni) begin
@@ -91,13 +98,14 @@ module turvo32_ftq
 			entry_pending_q <= entry_pending_d;
 			entry_valid_q   <= entry_valid_d;
 			if (rsp_handshake) rptr <= rptr + 1;
-			if (req_handshake) wptr <= wptr + 1;
+			if (req_valid_i) wptr <= wptr + 1;
+			if (invalidate_i) wptr <= rptr;
 		end
 	end
 
 	always_ff @(posedge clk_i) begin
-		if (req_handshake) entry_addrs[wptr] <= req_address_i;
-		if (entry_valid_d[bus_src_i]) entry_data[bus_src_i] <= bus_data_i;
+		if (req_valid_i) entry_addrs[wptr] <= req_address_i;
+		if (bus_handshake && entry_valid_d[bus_src_i]) entry_data[bus_src_i] <= bus_data_i;
 	end
 
 	initial begin
