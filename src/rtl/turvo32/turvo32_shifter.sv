@@ -15,6 +15,7 @@ module turvo32_shifter
             SLL: data_o = data_i << shamt_i;
             SRL: data_o = data_i >> shamt_i;
             SRA: data_o = $signed(data_i) >>> shamt_i;
+            default: data_o = '0;
         endcase
     end
 

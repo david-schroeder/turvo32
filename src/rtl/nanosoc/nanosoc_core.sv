@@ -28,6 +28,7 @@ module nanosoc_core (
     );
 
     nanosoc_ram #(
+        .LOG_SIZE(17),
         .MEMFILE(`STRINGIFY(`INIT_MEM_FILE))
     ) iram_i (
         .clk_i,
@@ -37,6 +38,7 @@ module nanosoc_core (
     );
 
     nanosoc_ram #(
+        .LOG_SIZE(17),
         .MEMFILE(`STRINGIFY(`INIT_MEM_FILE))
     ) dram_i (
         .clk_i,
