@@ -16,7 +16,7 @@ module turvo32_privileged
     input  mem_op_e     mem_op_i,
     input  logic [31:0] mem_addr_i,
 
-    input  logic        instr_valid_i,
+    input  logic        instr_ps_valid_i,
     input  logic [31:0] instr_i,
     input  logic [31:0] rs1_i,
     output logic [31:0] csr_rdata_o,
@@ -30,6 +30,8 @@ module turvo32_privileged
     input  logic        commit_i
 );
 
+    logic        instr_valid;
+
     logic [31:0] trap_val;
     logic [31:0] trap_epc;
 
@@ -38,14 +40,40 @@ module turvo32_privileged
     logic [31:0] mip;
     mtvec_t      mtvec;
 
-    csr_e        csr_sel;
-    csr_op_e     csr_op;
-    logic [31:0] csr_operand;
-    logic        csr_re;
-    logic        csr_we;
-    logic        ecall;
-    logic        ebreak;
-    logic        mret;
+    csr_e        csr_sel,     csr_sel_d;
+    csr_op_e     csr_op,      csr_op_d;
+    logic [31:0] csr_operand, csr_operand_d;
+    logic        csr_re,      csr_re_d;
+    logic        csr_we,      csr_we_d;
+    logic        ecall,       ecall_d;
+    logic        ebreak,      ebreak_d;
+    logic        mret,        mret_d;
+
+    always_ff @(posedge clk_i or negedge rst_ni) begin
+        if (~rst_ni) begin
+            csr_sel     <= MSTATUS;
+            csr_op      <= CSRRW;
+            csr_operand <= '0;
+            csr_re      <= '0;
+            csr_we      <= '0;
+            ecall       <= '0;
+            ebreak      <= '0;
+            mret        <= '0;
+            instr_valid <= '0;
+        end else begin
+            if (~stall_i) begin
+                csr_sel     <= csr_sel_d;
+                csr_op      <= csr_op_d;
+                csr_operand <= csr_operand_d;
+                csr_re      <= csr_re_d;
+                csr_we      <= csr_we_d;
+                ecall       <= ecall_d;
+                ebreak      <= ebreak_d;
+                mret        <= mret_d;
+                instr_valid <= instr_ps_valid_i;
+            end
+        end
+    end
 
     assign mret_o = mret;
 
@@ -56,7 +84,7 @@ module turvo32_privileged
         .ext_ints_i      (interrupts_i),
         .pc_i            (pc_i),
         .next_arch_pc_i  (next_arch_pc_i),
-        .instr_valid_i   (instr_valid_i),
+        .instr_valid_i   (instr_valid),
         .stall_i         (stall_i),
         .mstatus_i       (mstatus),
         .mie_i           (mie),
@@ -64,7 +92,7 @@ module turvo32_privileged
         .mtvec_i         (mtvec),
         .ecall_i         (ecall),
         .ebreak_i        (ebreak),
-        .mem_misaligned_i(mem_misaligned_i && instr_valid_i),
+        .mem_misaligned_i(mem_misaligned_i && instr_valid),
         .mem_op_i        (mem_op_i),
         .mem_addr_i      (mem_addr_i),
         .trap_o          (trap_o),
@@ -102,17 +130,17 @@ module turvo32_privileged
     );
 
     turvo32_privdec privdec_i (
-        .instr_valid_i,
+        .instr_valid_i(instr_ps_valid_i),
         .instr_i,
         .rs1_i,
-        .csr_sel_o    (csr_sel),
-        .csr_op_o     (csr_op),
-        .csr_operand_o(csr_operand),
-        .csr_re_o     (csr_re),
-        .csr_we_o     (csr_we),
-        .ecall_o      (ecall),
-        .ebreak_o     (ebreak),
-        .mret_o       (mret)
+        .csr_sel_o    (csr_sel_d),
+        .csr_op_o     (csr_op_d),
+        .csr_operand_o(csr_operand_d),
+        .csr_re_o     (csr_re_d),
+        .csr_we_o     (csr_we_d),
+        .ecall_o      (ecall_d),
+        .ebreak_o     (ebreak_d),
+        .mret_o       (mret_d)
     );
 
 endmodule

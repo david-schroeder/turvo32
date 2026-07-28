@@ -81,11 +81,6 @@ module turvo32_ftq
 			entry_valid_d[bus_src_i] = '1;
 		end
 		if (rsp_handshake) entry_valid_d[rptr] = '0;
-
-		if (invalidate_i) begin
-			entry_pending_d = '0;
-			entry_valid_d = '0;
-		end
 	end
 
 	always_ff @(posedge clk_i or negedge rst_ni) begin
@@ -99,7 +94,11 @@ module turvo32_ftq
 			entry_valid_q   <= entry_valid_d;
 			if (rsp_handshake) rptr <= rptr + 1;
 			if (req_valid_i) wptr <= wptr + 1;
-			if (invalidate_i) wptr <= rptr;
+			if (invalidate_i) begin
+				entry_pending_q <= '0;
+				entry_valid_q <= '0;
+				wptr <= rptr;
+			end
 		end
 	end
 

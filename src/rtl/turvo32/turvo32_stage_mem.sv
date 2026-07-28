@@ -106,8 +106,6 @@ module turvo32_stage_mem
 
     logic [31:0] pc_mem;
     logic [31:0] seq_pc_mem;
-    logic [31:0] instr_mem;
-    logic [31:0] rs1_mem;
 
     always_ff @(posedge clk_i or negedge rst_ni) begin
         if (~rst_ni) begin
@@ -126,8 +124,6 @@ module turvo32_stage_mem
             take_branch_mem <= '0;
             pc_mem          <= '0;
             seq_pc_mem      <= '0;
-            instr_mem       <= '0;
-            rs1_mem         <= '0;
         end else begin
             if (ps_ready_o) begin
                 valid_mem       <= ps_valid_i;
@@ -145,8 +141,6 @@ module turvo32_stage_mem
                 take_branch_mem <= take_branch_i;
                 pc_mem          <= pc_ex_i;
                 seq_pc_mem      <= seq_pc_ex_i;
-                instr_mem       <= instr_ex_i;
-                rs1_mem         <= rs1_ex_i;
             end
         end
     end
@@ -179,7 +173,7 @@ module turvo32_stage_mem
     assign fw_data_o  = ex_result_mem;
 
     assign jump_tgt_o = next_true_pc;
-    assign do_jump_o  = next_true_pc != seq_pc_mem && (valid_mem || is_trap);
+    assign do_jump_o  = next_true_pc != seq_pc_mem && valid_mem || is_trap;
 
     assign inval_if_o = do_jump_o;
     assign inval_id_o = do_jump_o;
@@ -236,9 +230,9 @@ module turvo32_stage_mem
         .mem_op_i        (mem_op_mem),
         .mem_addr_i      (ex_result_mem),
 
-        .instr_valid_i   (valid_mem),
-        .instr_i         (instr_mem),
-        .rs1_i           (rs1_mem),
+        .instr_ps_valid_i(ps_valid_i),
+        .instr_i         (instr_ex_i),
+        .rs1_i           (rs1_ex_i),
         .csr_rdata_o     (csr_rdata),
         .mret_o          (is_mret),
 
