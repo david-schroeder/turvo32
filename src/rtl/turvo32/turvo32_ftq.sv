@@ -36,6 +36,7 @@ module turvo32_ftq
 
 	logic [ENTRIES-1:0] entry_pending_d, entry_pending_q;
 	logic [ENTRIES-1:0] entry_valid_d,   entry_valid_q;
+	logic [ENTRIES-1:0] accept_data_writes;
 
 	logic [ENTRY_AW-1:0] rptr;
 	logic [ENTRY_AW-1:0] wptr;
@@ -53,8 +54,7 @@ module turvo32_ftq
 	assign bus_handshake    = bus_valid_i && bus_ready_o;
 	assign bus_matches_rptr = bus_src_i == rptr;
 	assign bus_rsp_direct   = bus_handshake && bus_matches_rptr;
-	// TODO: check if waiting for subsequent stages might cause a deadlock
-	assign bus_ready_o      = bus_matches_rptr ? rsp_ready_i : '1;
+	assign bus_ready_o      = '1;
 	assign bus_src_o        = wptr;
 
 	assign is_same_cyc_rsp = bus_handshake && req_valid_i && bus_src_o == bus_src_i;
@@ -72,13 +72,15 @@ module turvo32_ftq
 	/* State update logic */
 
 	always_comb begin
-		entry_pending_d = entry_pending_q;
-		entry_valid_d   = entry_valid_q;
+		entry_pending_d    = entry_pending_q;
+		entry_valid_d      = entry_valid_q;
+		accept_data_writes = '0;
 
 		if (req_valid_i) entry_pending_d[wptr] = '1;
 		if (bus_handshake && entry_pending_d[bus_src_i]) begin
 			entry_pending_d[bus_src_i] = '0;
 			entry_valid_d[bus_src_i] = '1;
+			accept_data_writes[bus_src_i] = '1;
 		end
 		if (rsp_handshake) entry_valid_d[rptr] = '0;
 	end
@@ -104,7 +106,7 @@ module turvo32_ftq
 
 	always_ff @(posedge clk_i) begin
 		if (req_valid_i) entry_addrs[wptr] <= req_address_i;
-		if (bus_handshake && entry_valid_d[bus_src_i]) entry_data[bus_src_i] <= bus_data_i;
+		if (accept_data_writes[bus_src_i]) entry_data[bus_src_i] <= bus_data_i;
 	end
 
 	initial begin

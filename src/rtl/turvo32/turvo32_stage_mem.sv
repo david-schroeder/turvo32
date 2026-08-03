@@ -173,7 +173,7 @@ module turvo32_stage_mem
     assign fw_data_o  = ex_result_mem;
 
     assign jump_tgt_o = next_true_pc;
-    assign do_jump_o  = next_true_pc != seq_pc_mem && valid_mem || is_trap;
+    assign do_jump_o  = next_arch_pc != seq_pc_mem && valid_mem || is_trap;
 
     assign inval_if_o = do_jump_o;
     assign inval_id_o = do_jump_o;
