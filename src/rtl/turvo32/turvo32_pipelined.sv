@@ -97,6 +97,10 @@ module turvo32_pipelined
     logic        fw_valid_mem;
     logic [ 4:0] fw_rd_mem;
     logic [31:0] fw_data_mem;
+    logic [31:0] btb_pc_mem;
+    logic [31:0] btb_tgt_mem;
+    logic        btb_cond_mem;
+    logic        btb_we_mem;
 
     // WB stage signals
     logic [ 4:0] rd_wb;
@@ -130,6 +134,11 @@ module turvo32_pipelined
         .pc_o    (pc_if),
         .pc_seq_o(pc_seq_if),
         .instr_o (instr_if),
+
+        .btb_pc_i    (btb_pc_mem),
+        .btb_tgt_i   (btb_tgt_mem),
+        .btb_cond_i  (btb_cond_mem),
+        .btb_we_i    (btb_we_mem),
 
         .ibus_o,
         .ibus_i
@@ -286,6 +295,11 @@ module turvo32_pipelined
         .inval_if_o   (inval_if_mem),
         .inval_id_o   (inval_id_mem),
         .inval_ex_o   (inval_ex_mem),
+
+        .btb_pc_o     (btb_pc_mem),
+        .btb_tgt_o    (btb_tgt_mem),
+        .btb_cond_o   (btb_cond_mem),
+        .btb_we_o     (btb_we_mem),
 
         .rd_o       (rd_mem),
         .reg_we_o   (reg_we_mem),

@@ -8,6 +8,7 @@ module turvo32_ftq
 	import tilelink_pkg::*;
 #(
 	parameter  int ENTRIES = 4,
+	parameter  int ANC_W = 1,
 	localparam int ENTRY_AW = $clog2(ENTRIES)
 ) (
 	input  logic clk_i,
@@ -16,11 +17,13 @@ module turvo32_ftq
 	input  logic invalidate_i,
 
 	input  logic [        31:0] req_address_i,
+	input  logic [   ANC_W-1:0] req_anc_i, // ancillary request data
 	input  logic                req_valid_i, // request transaction this cycle
 	output logic                req_ready_o,
 
 	output logic [        31:0] rsp_address_o,
 	output logic [        31:0] rsp_data_o,
+	output logic [   ANC_W-1:0] rsp_anc_o,
 	output logic                rsp_valid_o,
 	input  logic                rsp_ready_i,
 
@@ -31,8 +34,9 @@ module turvo32_ftq
 	input  logic [        31:0] bus_data_i
 );
 
-	logic [31:0] entry_addrs [ENTRIES-1:0];
-	logic [31:0] entry_data  [ENTRIES-1:0];
+	logic [     31:0] entry_addrs     [ENTRIES-1:0];
+	logic [ANC_W-1:0] entry_ancillary [ENTRIES-1:0];
+	logic [     31:0] entry_data      [ENTRIES-1:0];
 
 	logic [ENTRIES-1:0] entry_pending_d, entry_pending_q;
 	logic [ENTRIES-1:0] entry_valid_d,   entry_valid_q;
@@ -68,6 +72,7 @@ module turvo32_ftq
 	assign rsp_valid_o   = (bus_rsp_direct ? entry_pending_q[rptr] : entry_valid_q[rptr]) && !invalidate_i;
 	assign rsp_data_o    = bus_rsp_direct ? bus_data_i : entry_data[rptr];
 	assign rsp_address_o = is_same_cyc_rsp ? req_address_i : entry_addrs[rptr];
+	assign rsp_anc_o     = is_same_cyc_rsp ? req_anc_i : entry_ancillary[rptr];
 
 	/* State update logic */
 
@@ -105,13 +110,17 @@ module turvo32_ftq
 	end
 
 	always_ff @(posedge clk_i) begin
-		if (req_valid_i) entry_addrs[wptr] <= req_address_i;
+		if (req_valid_i) begin
+			entry_addrs[wptr] <= req_address_i;
+			entry_ancillary[wptr] <= req_anc_i;
+		end
 		if (accept_data_writes[bus_src_i]) entry_data[bus_src_i] <= bus_data_i;
 	end
 
 	initial begin
-		entry_addrs <= '{default: '0};
-		entry_data  <= '{default: '0};
+		entry_ancillary <= '{default: '0};
+		entry_addrs     <= '{default: '0};
+		entry_data      <= '{default: '0};
 	end
 
 endmodule

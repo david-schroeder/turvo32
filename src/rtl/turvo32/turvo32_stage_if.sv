@@ -24,6 +24,11 @@ module turvo32_stage_if
     output logic [31:0] pc_seq_o,
     output logic [31:0] instr_o,
 
+    input  logic [31:0] btb_pc_i,
+    input  logic [31:0] btb_tgt_i,
+    input  logic        btb_cond_i,
+    input  logic        btb_we_i,
+
     output tl_h2d_t ibus_o,
     input  tl_d2h_t ibus_i
 );
@@ -47,6 +52,10 @@ module turvo32_stage_if
     logic [ 1:0] ftq_src_h2d;
     logic [ 1:0] ftq_src_d2h;
     logic [31:0] ftq_bus_data;
+
+    // BTB
+    logic [31:0] btb_pred_addr;
+    logic        btb_says_jump;
 
     /////////////
     //         //
@@ -74,14 +83,13 @@ module turvo32_stage_if
 
     assign valid_if = ~is_first_cycle & ~invalidate_i;
 
-    assign pc_seq   = pc_if + 4;
-    assign pc_seq_o = pc_o + 4;
+    assign pc_seq = pc_if + 4;
 
     always_comb begin
         unique case (1'b1)
             is_first_cycle : pc_d = BOOT_ADDR; // First cycle after boot
             do_jump_i      : pc_d = jump_tgt_i;
-            default        : pc_d = pc_seq;
+            default        : pc_d = btb_says_jump ? btb_pred_addr : pc_seq;
         endcase
     end
 
@@ -108,17 +116,21 @@ module turvo32_stage_if
 
     /* Fetch Target Queue */
 
-    turvo32_ftq ftq_i (
+    turvo32_ftq #(
+        .ANC_W(32)
+    ) ftq_i (
         .clk_i,
         .rst_ni,
 
         .invalidate_i,
 
         .req_address_i(pc_if),
+        .req_anc_i    (pc_d),
         .req_valid_i  (valid_if && ftq_ready && ibus_i.a_ready),
         .req_ready_o  (ftq_ready),
 
         .rsp_address_o(pc_o),
+        .rsp_anc_o    (pc_seq_o),
         .rsp_data_o   (instr_o),
         .rsp_valid_o  (ns_valid_o),
         .rsp_ready_i  (ns_ready_i),
@@ -128,6 +140,24 @@ module turvo32_stage_if
         .bus_src_i    (ftq_src_d2h),
         .bus_src_o    (ftq_src_h2d),
         .bus_data_i   (ftq_bus_data)
+    );
+
+    /* Branch Target Buffer */
+
+    turvo32_btb btb_i (
+        .clk_i,
+        .rst_ni,
+
+        .pc_d_i     (pc_d),
+        .pc_jump_o  (btb_pred_addr),
+        .do_jump_o  (btb_says_jump),
+        .way_o      (),
+
+        .w_pc_i     (btb_pc_i),
+        .w_way_i    ('0),
+        .w_tgt_i    (btb_tgt_i),
+        .w_is_cond_i(btb_cond_i),
+        .we_i       (btb_we_i)
     );
 
 endmodule

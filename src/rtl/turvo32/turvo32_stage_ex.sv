@@ -237,7 +237,7 @@ module turvo32_stage_ex
         unique case (wb_src_ex)
             SHIFTER: result_o = shifter_result;
             DIVIDER: result_o = div_result;
-            SEQ_PC : result_o = pc_seq_ex;
+            SEQ_PC : result_o = pc_ex + 4; // TODO: adjust for RVC
             default: result_o = alu_result;
         endcase
     end
