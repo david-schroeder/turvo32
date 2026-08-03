@@ -88,6 +88,9 @@ module turvo32_stage_mem
     mcause_t     mcause;
     logic [31:0] csr_rdata;
 
+    logic        branch_pred_right;
+    logic        branch_pred_wrong;
+
     /////////////////////
     //                 //
     // EX <-> MEM Regs //
@@ -187,7 +190,6 @@ module turvo32_stage_mem
     assign fw_data_o  = ex_result_mem;
 
     assign jump_tgt_o = next_true_pc;
-    assign do_jump_o  = next_arch_pc != seq_pc_mem && valid_mem || is_trap;
 
     assign inval_if_o = do_jump_o;
     assign inval_id_o = do_jump_o;
@@ -202,6 +204,10 @@ module turvo32_stage_mem
             if (is_branch_mem && take_branch_mem) next_arch_pc = branch_tgt_mem;
             if (is_mret) next_arch_pc = mepc;
         end
+
+        do_jump_o         = next_arch_pc != seq_pc_mem && valid_mem || is_trap;
+        branch_pred_wrong = next_arch_pc != seq_pc_mem && valid_mem;
+        branch_pred_right = next_arch_pc != pc_mem + 4 && next_arch_pc == seq_pc_mem && valid_mem;
     end
 
     assign next_true_pc = is_trap ? trap_pc : next_arch_pc;
