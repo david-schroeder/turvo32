@@ -18,8 +18,10 @@ module turvo32_stage_id
     // Stall control (datahazards)
     input  logic        valid_mult_ex_i,
     input  logic        valid_load_ex_i,
+    input  logic        valid_load_mem_i,
     input  logic        valid_csrr_ex_i,
     input  logic [ 4:0] rd_ex_i,
+    input  logic [ 4:0] rd_mem_i,
 
     // IF inputs
     input  logic [31:0] pc_i,
@@ -104,7 +106,6 @@ module turvo32_stage_id
         end
     end
 
-    // TODO: deassert ns_valid_o on stall, CSR read, fence etc
     assign ns_valid_o = valid_id && ps_ready_o && !invalidate_i;
 
     /////////////////
@@ -118,7 +119,8 @@ module turvo32_stage_id
     assign reg_ra2_o = ra2;
 
     assign stall_mult_use = valid_mult_ex_i && rd_ex_i inside {ra1, ra2};
-    assign stall_load_use = valid_load_ex_i && rd_ex_i inside {ra1, ra2};
+    assign stall_load_use = valid_load_ex_i && rd_ex_i inside {ra1, ra2}
+                        || valid_load_mem_i && rd_mem_i inside {ra1, ra2};
     assign stall_csrr_use = valid_csrr_ex_i && rd_ex_i inside {ra1, ra2};
 
     assign stage_ready = (~stall_mult_use

@@ -91,6 +91,7 @@ module turvo32_pipelined
     logic [31:0] reg_wdata_mem;
     logic [31:0] jump_tgt_mem;
     logic        do_jump_mem;
+    logic        is_valid_load_mem;
     logic        inval_if_mem;
     logic        inval_id_mem;
     logic        inval_ex_mem;
@@ -154,10 +155,12 @@ module turvo32_pipelined
         .ns_ready_i  (ex_stage_ready),
         .invalidate_i(inval_id_mem),
 
-        .valid_mult_ex_i(is_valid_mult_ex),
-        .valid_load_ex_i(is_valid_load_ex),
-        .valid_csrr_ex_i(is_valid_csrr_ex),
-        .rd_ex_i        (rd_ex),
+        .valid_mult_ex_i (is_valid_mult_ex),
+        .valid_load_ex_i (is_valid_load_ex),
+        .valid_load_mem_i(is_valid_load_mem),
+        .valid_csrr_ex_i (is_valid_csrr_ex),
+        .rd_ex_i         (rd_ex),
+        .rd_mem_i        (rd_mem),
 
         .pc_i        (pc_if),
         .pc_seq_i    (pc_seq_if),
@@ -291,6 +294,8 @@ module turvo32_pipelined
         .instr_ex_i  (instr_ex),
         .rs1_ex_i    (rs1_ex),
         .commit_i    (mem_stage_valid),
+
+        .is_valid_load_o(is_valid_load_mem),
 
         .inval_if_o   (inval_if_mem),
         .inval_id_o   (inval_id_mem),

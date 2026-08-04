@@ -35,6 +35,9 @@ module turvo32_stage_mem
     input  logic [31:0] rs1_ex_i,
     input  logic        commit_i,
 
+    // ID Stall control (datahazards)
+    output logic        is_valid_load_o,
+
     // Control flow management outputs
     output logic [31:0] jump_tgt_o,
     output logic        do_jump_o,
@@ -183,6 +186,9 @@ module turvo32_stage_mem
             default: reg_wdata_o = ex_result_mem;
         endcase
     end
+
+    assign is_valid_load_o = valid_mem && is_mem_op_mem
+                           && mem_op_mem inside {LB, LBU, LH, LHU, LW};
 
     assign fw_valid_o = rd_mem != '0 && reg_we_mem && valid_mem;
     assign fw_rd_o    = rd_mem;
