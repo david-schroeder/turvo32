@@ -5,9 +5,15 @@ module turvo32_top
     import turvo32_pkg::*;
     import tilelink_pkg::*;
 #(
-    parameter logic [31:0] BOOT_ADDR      = 32'h00000080,
-    parameter logic [31:0] DEBUG_ADDR     = 32'h10000000,
-    parameter logic [31:0] DEBUG_EXC_ADDR = 32'h10001000
+    // Hard entrypoints
+    parameter  logic [31:0] BOOT_ADDR      = 32'h00000080,
+    parameter  logic [31:0] DEBUG_ADDR     = 32'h10000000,
+    parameter  logic [31:0] DEBUG_EXC_ADDR = 32'h10001000,
+
+    // Component parameterization
+
+    parameter  int BTB_SETS = 256,
+    parameter  int BTB_WAYS = 4
 ) (
     input  logic clk_i,
     input  logic rst_ni,
@@ -32,85 +38,87 @@ module turvo32_top
     // WB stage must always be ready
 
     // IF stage signals
-    logic [31:0] pc_if;
-    logic [31:0] pc_seq_if;
-    logic [31:0] instr_if;
+    localparam int BTB_WAYW = $clog2(BTB_WAYS);
+    logic [BTB_WAYW-1:0] btb_way_if;
+    logic [        31:0] pc_if;
+    logic [        31:0] pc_seq_if;
+    logic [        31:0] instr_if;
 
     // ID stage signals
-    logic [31:0] pc_id;
-    logic [31:0] pc_seq_id;
-    logic [31:0] instr_id;
-    logic [ 4:0] ra1_id;
-    logic [ 4:0] ra2_id;
-    logic [31:0] rs1_id;
-    logic [31:0] rs2_id;
-    logic [31:0] imm_id;
-    alu_src1_e   alu_src1_id;
-    alu_src2_e   alu_src2_id;
-    alu_op_e     alu_op_id;
-    shift_op_e   shift_op_id;
-    branch_e     branch_type_id;
-    logic        is_branch_id;
-    logic        is_jump_id;
-    mult_op_e    mult_op_id;
-    div_op_e     div_op_id;
-    logic        is_mult_id;
-    logic        is_div_id;
-    mem_op_e     mem_op_id;
-    logic        is_mem_op_id;
-    logic [ 4:0] rd_id;
-    logic        reg_we_id;
-    wb_src_e     wb_src_id;
+    logic [        31:0] pc_id;
+    logic [        31:0] pc_seq_id;
+    logic [        31:0] instr_id;
+    logic [         4:0] ra1_id;
+    logic [         4:0] ra2_id;
+    logic [        31:0] rs1_id;
+    logic [        31:0] rs2_id;
+    logic [        31:0] imm_id;
+    alu_src1_e           alu_src1_id;
+    alu_src2_e           alu_src2_id;
+    alu_op_e             alu_op_id;
+    shift_op_e           shift_op_id;
+    branch_e             branch_type_id;
+    logic                is_branch_id;
+    logic                is_jump_id;
+    mult_op_e            mult_op_id;
+    div_op_e             div_op_id;
+    logic                is_mult_id;
+    logic                is_div_id;
+    mem_op_e             mem_op_id;
+    logic                is_mem_op_id;
+    logic [         4:0] rd_id;
+    logic                reg_we_id;
+    wb_src_e             wb_src_id;
 
     // EX stage signals
-    logic [31:0] pc_ex;
-    logic [31:0] seq_pc_ex;
-    logic [31:0] instr_ex;
-    logic [31:0] rs1_ex;
-    logic [31:0] jump_target_ex;
-    logic [31:0] branch_target_ex;
-    logic        is_branch_ex;
-    logic        is_jump_ex;
-    logic        is_valid_mult_ex;
-    logic        is_valid_load_ex;
-    logic        is_valid_csrr_ex;
-    logic        take_branch_ex;
-    mem_op_e     mem_op_ex;
-    logic        is_mem_op_ex;
-    logic [31:0] mem_wdata_ex;
-    logic [ 4:0] rd_ex;
-    logic        reg_we_ex;
-    wb_src_e     wb_src_ex;
-    logic [31:0] result_ex;
-    logic [31:0] mult_result_ex;
+    logic [        31:0] pc_ex;
+    logic [        31:0] seq_pc_ex;
+    logic [        31:0] instr_ex;
+    logic [        31:0] rs1_ex;
+    logic [        31:0] jump_target_ex;
+    logic [        31:0] branch_target_ex;
+    logic                is_branch_ex;
+    logic                is_jump_ex;
+    logic                is_valid_mult_ex;
+    logic                is_valid_load_ex;
+    logic                is_valid_csrr_ex;
+    logic                take_branch_ex;
+    mem_op_e             mem_op_ex;
+    logic                is_mem_op_ex;
+    logic [        31:0] mem_wdata_ex;
+    logic [         4:0] rd_ex;
+    logic                reg_we_ex;
+    wb_src_e             wb_src_ex;
+    logic [        31:0] result_ex;
+    logic [        31:0] mult_result_ex;
 
     // MEM stage signals
-    logic [ 4:0] rd_mem;
-    logic        reg_we_mem;
-    wb_src_e     wb_src_mem;
-    logic [31:0] reg_wdata_mem;
-    logic [31:0] lsu_rdata_mem;
-    logic [31:0] jump_tgt_mem;
-    logic        do_jump_mem;
-    logic        is_valid_load_mem;
-    logic        inval_if_mem;
-    logic        inval_id_mem;
-    logic        inval_ex_mem;
-    logic        fw_valid_mem;
-    logic [ 4:0] fw_rd_mem;
-    logic [31:0] fw_data_mem;
-    logic [31:0] btb_pc_mem;
-    logic [31:0] btb_tgt_mem;
-    logic        btb_cond_mem;
-    logic        btb_we_mem;
+    logic [         4:0] rd_mem;
+    logic                reg_we_mem;
+    wb_src_e             wb_src_mem;
+    logic [        31:0] reg_wdata_mem;
+    logic [        31:0] lsu_rdata_mem;
+    logic [        31:0] jump_tgt_mem;
+    logic                do_jump_mem;
+    logic                is_valid_load_mem;
+    logic                inval_if_mem;
+    logic                inval_id_mem;
+    logic                inval_ex_mem;
+    logic                fw_valid_mem;
+    logic [         4:0] fw_rd_mem;
+    logic [        31:0] fw_data_mem;
+    logic [        31:0] btb_pc_mem;
+    logic [        31:0] btb_tgt_mem;
+    logic                btb_cond_mem;
+    logic                btb_we_mem;
 
     // WB stage signals
-    logic [ 4:0] rd_wb;
-    logic        reg_we_wb;
-    logic [31:0] reg_wdata_wb;
-    logic        fw_valid_wb;
-    logic [ 4:0] fw_rd_wb;
-    logic [31:0] fw_data_wb;
+    logic [         4:0] rd_wb;
+    logic                reg_we_wb;
+    logic [        31:0] reg_wdata_wb;
+    logic                fw_valid_wb;
+    logic [         4:0] fw_rd_wb;
+    logic [        31:0] fw_data_wb;
 
     /////////////////////////
     //                     //
@@ -137,6 +145,8 @@ module turvo32_top
         .pc_seq_o(pc_seq_if),
         .instr_o (instr_if),
 
+        .btb_way_o   (btb_way_if),
+        .btb_way_i   ('0),
         .btb_pc_i    (btb_pc_mem),
         .btb_tgt_i   (btb_tgt_mem),
         .btb_cond_i  (btb_cond_mem),
