@@ -1,7 +1,10 @@
 // SPDX-License-Identifier: SHL-2.1
 // SPDX-FileCopyrightText: David Schröder 2026
 
-// TURVo32 Load-Store Unit. Lives entirely in the MEM stage.
+// TURVo32 Load-Store Unit.
+// May have exactly one outstanding memory request.
+// This simplifies RISC-V spec compliance while enabling
+// bus errors in the future.
 
 module turvo32_lsu
     import turvo32_pkg::*;
@@ -53,6 +56,26 @@ module turvo32_lsu
         endcase
     end
 
+    /* Delayed response logic */
+    // See section 4.2 of the TileLink spec v1.9.3
+
+    tl_d2h_t bus_rsp_q, delayed_rsp;
+    logic delay_rsp;
+
+    always_ff @(posedge clk_i or negedge rst_ni) begin
+        if (~rst_ni) begin
+            bus_rsp_q <= '{d_opcode: AccessAck, default: '0};
+            delay_rsp <= '0;
+        end else begin
+            bus_rsp_q <= tl_i;
+            // Use bus value from registered input iff response was
+            // accepted in same cycle as request was issued
+            delay_rsp <= tl_o.a_valid && tl_i.d_valid && tl_o.d_ready;
+        end
+    end
+
+    assign delayed_rsp = delay_rsp ? bus_rsp_q : tl_i;
+
     /* Bus FSM */
 
     typedef enum logic [0:0] {
@@ -66,21 +89,21 @@ module turvo32_lsu
     logic d_exchange;
     logic is_valid_mem_op;
     assign a_exchange = tl_o.a_valid && tl_i.a_ready;
-    assign d_exchange = tl_i.d_valid && tl_o.d_ready;
+    assign d_exchange = delayed_rsp.d_valid; // d_ready always 1
     assign is_valid_mem_op = is_mem_op_i && valid_i && !misaligned_o;
 
     always_comb begin
         unique case (state_q)
             Idle: begin
-                if (is_valid_mem_op && a_exchange && !d_exchange) begin
+                if (is_valid_mem_op && a_exchange) begin
                     state_d = AwaitData;
                 end else state_d = Idle;
-                stall_o = is_valid_mem_op && (!a_exchange || !d_exchange);
+                stall_o = is_valid_mem_op && !a_exchange;
             end
             AwaitData: begin
                 if (d_exchange) state_d = Idle;
                 else state_d = AwaitData;
-                stall_o = !d_exchange;
+                stall_o = !d_exchange || is_valid_mem_op;
             end
             default: begin
                 state_d = state_q;
@@ -100,7 +123,7 @@ module turvo32_lsu
     /* Bus interface */
 
     logic [31:0] rdata;
-    assign rdata = tl_i.d_valid ? tl_i.d_data : '0;
+    assign rdata = delayed_rsp.d_valid ? delayed_rsp.d_data : '0;
 
     assign tl_o = '{
         a_valid: is_valid_mem_op && state_q == Idle,
@@ -115,13 +138,28 @@ module turvo32_lsu
 
     /* Load logic */
 
+    mem_op_e     op_q;
+    logic [ 1:0] offset_q;
     logic [15:0] sel_halfword;
     logic [ 7:0] sel_byte;
-    assign sel_halfword = address_i[1] ? rdata[31:16] : rdata[15:0];
-    assign sel_byte = address_i[0] ? sel_halfword[15:8] : sel_halfword[7:0];
+
+    assign sel_halfword = offset_q[1] ? rdata[31:16] : rdata[15:0];
+    assign sel_byte = offset_q[0] ? sel_halfword[15:8] : sel_halfword[7:0];
+
+    always_ff @(posedge clk_i or negedge rst_ni) begin
+        if (~rst_ni) begin
+            op_q <= LB;
+            offset_q <= '0;
+        end else begin
+            if (state_q == Idle) begin
+                op_q <= op_i;
+                offset_q <= address_i[1:0];
+            end
+        end
+    end
 
     always_comb begin
-        unique case (op_i)
+        unique case (op_q)
             LB : data_o = {{24{sel_byte[7]}}, sel_byte};
             LBU: data_o = {24'h0, sel_byte};
             LH : data_o = {{16{sel_halfword[15]}}, sel_halfword};

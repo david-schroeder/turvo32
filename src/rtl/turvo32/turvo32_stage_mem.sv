@@ -57,6 +57,7 @@ module turvo32_stage_mem
     output logic        reg_we_o,
     output wb_src_e     wb_src_o,
     output logic [31:0] reg_wdata_o,
+    output logic [31:0] lsu_rdata_o,
 
     // Forwarding outputs
     output logic        fw_valid_o,
@@ -79,7 +80,6 @@ module turvo32_stage_mem
 
     logic        lsu_stall;
     logic        lsu_misaligned;
-    logic [31:0] lsu_rdata;
 
     logic [31:0] next_arch_pc;
     logic [31:0] next_true_pc;
@@ -179,13 +179,7 @@ module turvo32_stage_mem
     assign reg_we_o    = reg_we_mem;
     assign wb_src_o    = wb_src_mem;
 
-    always_comb begin
-        unique case (wb_src_mem)
-            LSU    : reg_wdata_o = lsu_rdata;
-            CSR    : reg_wdata_o = csr_rdata;
-            default: reg_wdata_o = ex_result_mem;
-        endcase
-    end
+    assign reg_wdata_o = wb_src_mem == CSR ? csr_rdata : ex_result_mem;
 
     assign is_valid_load_o = valid_mem && is_mem_op_mem
                            && mem_op_mem inside {LB, LBU, LH, LHU, LW};
@@ -193,6 +187,8 @@ module turvo32_stage_mem
     assign fw_valid_o = rd_mem != '0 && reg_we_mem && valid_mem;
     assign fw_rd_o    = rd_mem;
     // Forwarded data never comes from the bus (load-use stall)
+    // TODO: check if we can avoid CSRR-use stalls by setting this
+    //       to reg_wdata_o instead
     assign fw_data_o  = ex_result_mem;
 
     assign jump_tgt_o = next_true_pc;
@@ -233,7 +229,7 @@ module turvo32_stage_mem
         .is_mem_op_i(is_mem_op_mem),
         .op_i       (mem_op_mem),
 
-        .data_o      (lsu_rdata),
+        .data_o      (lsu_rdata_o),
         .misaligned_o(lsu_misaligned),
 
         .valid_i(valid_mem),

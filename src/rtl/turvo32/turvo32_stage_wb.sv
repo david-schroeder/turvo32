@@ -16,6 +16,7 @@ module turvo32_stage_wb
     input  logic        reg_we_i,
     input  wb_src_e     wb_src_i,
     input  logic [31:0] ex_result_i,
+    input  logic [31:0] lsu_rdata_i,
     input  logic [31:0] ex_mul_res_i,
 
     // Regfile writeback outputs
@@ -78,7 +79,7 @@ module turvo32_stage_wb
             ALU,
             SHIFTER,
             DIVIDER,
-            LSU,
+            LSU, // don't treat LSU separately here so it isn't forwarded
             SEQ_PC,
             CSR    : wb_data = ex_result_wb;
             MULT   : wb_data = ex_mul_res_i;
@@ -87,7 +88,8 @@ module turvo32_stage_wb
     end
 
     assign reg_rd_o    = rd_wb;
-    assign reg_wdata_o = wb_data;
+    // lsu_rdata_i is not buffered (i.e., it is but in the LSU)
+    assign reg_wdata_o = wb_src_wb == LSU ? lsu_rdata_i : wb_data;
     assign reg_we_o    = valid_wb && reg_we_wb;
     assign fw_rd_o     = rd_wb;
     assign fw_data_o   = wb_data;

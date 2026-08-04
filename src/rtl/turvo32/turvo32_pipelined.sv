@@ -89,6 +89,7 @@ module turvo32_pipelined
     logic        reg_we_mem;
     wb_src_e     wb_src_mem;
     logic [31:0] reg_wdata_mem;
+    logic [31:0] lsu_rdata_mem;
     logic [31:0] jump_tgt_mem;
     logic        do_jump_mem;
     logic        is_valid_load_mem;
@@ -310,6 +311,7 @@ module turvo32_pipelined
         .reg_we_o   (reg_we_mem),
         .wb_src_o   (wb_src_mem),
         .reg_wdata_o(reg_wdata_mem),
+        .lsu_rdata_o(lsu_rdata_mem),
 
         .jump_tgt_o(jump_tgt_mem),
         .do_jump_o (do_jump_mem),
@@ -332,6 +334,7 @@ module turvo32_pipelined
         .reg_we_i    (reg_we_mem),
         .wb_src_i    (wb_src_mem),
         .ex_result_i (reg_wdata_mem),
+        .lsu_rdata_i (lsu_rdata_mem),
         .ex_mul_res_i(mult_result_ex),
 
         .reg_rd_o   (rd_wb),
