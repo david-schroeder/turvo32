@@ -58,6 +58,7 @@ module turvo32_btb
 
 	generate
 		for (genvar i = 0; i < WAYS; i++) begin : gen_ways
+			(* ram_style = "block" *)
 			logic [LINE_W-1:0] lines [SETS-1:0];
 			logic              valid [SETS-1:0];
 
@@ -66,12 +67,8 @@ module turvo32_btb
 
 			always_ff @(posedge clk_i or negedge rst_ni) begin
 				if (~rst_ni) begin
-					tag_rdata[i] <= '0;
-					dest_rdata[i] <= '0;
-					flag_rdata[i] <= '0;
 					valid_rdata[i] <= '0;
 				end else begin
-					{tag_rdata[i], dest_rdata[i], flag_rdata[i]} <= lines[pc_d_idx];
 					valid_rdata[i] <= valid[pc_d_idx];
 				end
 			end
@@ -81,6 +78,7 @@ module turvo32_btb
 					lines[w_pc_i[1+:IDX_W]] <= {w_pc_i[31-:TAG_W], w_tgt_i[31:1], w_is_cond_i};
 					valid[w_pc_i[1+:IDX_W]] <= '1;
 				end
+				{tag_rdata[i], dest_rdata[i], flag_rdata[i]} <= lines[pc_d_idx];
 			end
 		end : gen_ways
 	endgenerate
