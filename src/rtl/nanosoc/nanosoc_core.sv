@@ -17,7 +17,7 @@ module nanosoc_core (
     tl_h2d_t ibus_req, dbus_req;
     tl_d2h_t ibus_rsp, dbus_rsp;
 
-    turvo32_pipelined uproc_i (
+    turvo32_top uproc_i (
         .clk_i,
         .rst_ni,
         .interrupts_i('0),
