@@ -181,9 +181,7 @@ module turvo32_stage_mem
     /////////////////
 
     assign btb_pc_o = pc_mem;
-    // accidental 1 bit history table predictor xdddd
-    // (wrongly stores last sequential address in BTB instead of branch target)
-    assign btb_tgt_o = next_arch_pc;
+    assign btb_tgt_o = is_jump_mem ? jump_tgt_mem : branch_tgt_mem;
     assign btb_cond_o = is_branch_mem;
     assign btb_we_o = valid_mem && (is_jump_mem || is_branch_mem);
 
