@@ -16,7 +16,8 @@ flow = Flow()
 # --------
 
 sw_dirs = [
-    "minimal"
+    "minimal",
+    "coremark"
 ]
 
 flow['libsys'] = Libsys()
@@ -30,7 +31,7 @@ for sw_dir in sw_dirs:
 
 flow['simlibs_questa'] = SimlibsQuesta()
 flow['srcs'] = Sources(dependency_map={
-    'swinit': 'sw_minimal',
+    'swinit': 'sw_coremark',
 })
 
 flow['fpga_top'] = FpgaTop(dependency_map={'srcs':'srcs'})
