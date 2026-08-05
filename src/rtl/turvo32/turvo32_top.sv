@@ -74,6 +74,7 @@ module turvo32_top
     // EX stage signals
     logic [        31:0] pc_ex;
     logic [        31:0] seq_pc_ex;
+    logic [        31:0] linear_pc_ex;
     logic [        31:0] instr_ex;
     logic [        31:0] rs1_ex;
     logic [        31:0] jump_target_ex;
@@ -276,6 +277,7 @@ module turvo32_top
 
         .pc_o         (pc_ex),
         .seq_pc_o     (seq_pc_ex),
+        .linear_pc_o  (linear_pc_ex),
         .instr_o      (instr_ex),
         .rs1_o        (rs1_ex),
         .mem_op_o     (mem_op_ex),
@@ -296,6 +298,7 @@ module turvo32_top
         .ps_ready_o(mem_stage_ready),
         .ns_valid_o(mem_stage_valid),
 
+        .linear_pc_i (linear_pc_ex),
         .rd_i        (rd_ex),
         .reg_we_i    (reg_we_ex),
         .wb_src_i    (wb_src_ex),

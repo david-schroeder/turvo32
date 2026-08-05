@@ -16,6 +16,7 @@ module turvo32_stage_mem
     output logic ns_valid_o,
 
     // EX stage inputs
+    input  logic [31:0] linear_pc_i,
     input  logic [ 4:0] rd_i,
     input  logic        reg_we_i,
     input  wb_src_e     wb_src_i,
@@ -124,6 +125,7 @@ module turvo32_stage_mem
 
     logic [31:0] pc_mem;
     logic [31:0] seq_pc_mem;
+    logic [31:0] linear_pc_mem;
     logic [31:0] instr_mem; // Unused but useful for debugging (committed instr)
 
     always_ff @(posedge clk_i or negedge rst_ni) begin
@@ -143,6 +145,7 @@ module turvo32_stage_mem
             take_branch_mem <= '0;
             pc_mem          <= '0;
             seq_pc_mem      <= '0;
+            linear_pc_mem   <= '0;
             instr_mem       <= '0;
             btb_way_o       <= '0;
         end else begin
@@ -162,6 +165,7 @@ module turvo32_stage_mem
                 take_branch_mem <= take_branch_i;
                 pc_mem          <= pc_ex_i;
                 seq_pc_mem      <= seq_pc_ex_i;
+                linear_pc_mem   <= linear_pc_i;
                 instr_mem       <= instr_ex_i;
                 btb_way_o       <= btb_way_i;
             end
@@ -177,6 +181,8 @@ module turvo32_stage_mem
     /////////////////
 
     assign btb_pc_o = pc_mem;
+    // accidental 1 bit history table predictor xdddd
+    // (wrongly stores last sequential address in BTB instead of branch target)
     assign btb_tgt_o = next_arch_pc;
     assign btb_cond_o = is_branch_mem;
     assign btb_we_o = valid_mem && (is_jump_mem || is_branch_mem);
@@ -208,7 +214,7 @@ module turvo32_stage_mem
     assign is_exception = is_trap && !mcause.interrupt;
 
     always_comb begin
-        next_arch_pc = pc_mem + 4;
+        next_arch_pc = linear_pc_mem;
         if (valid_mem) begin
             if (is_jump_mem) next_arch_pc = jump_tgt_mem;
             if (is_branch_mem && take_branch_mem) next_arch_pc = branch_tgt_mem;
@@ -217,7 +223,7 @@ module turvo32_stage_mem
 
         do_jump_o         = next_arch_pc != seq_pc_mem && valid_mem || is_trap;
         branch_pred_wrong = next_arch_pc != seq_pc_mem && valid_mem;
-        branch_pred_right = next_arch_pc != pc_mem + 4 && next_arch_pc == seq_pc_mem && valid_mem;
+        branch_pred_right = next_arch_pc != linear_pc_mem && next_arch_pc == seq_pc_mem && valid_mem;
     end
 
     assign next_true_pc = is_trap ? trap_pc : next_arch_pc;

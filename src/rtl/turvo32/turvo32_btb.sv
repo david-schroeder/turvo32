@@ -30,7 +30,7 @@ module turvo32_btb
 
 	localparam IDX_W = $clog2(SETS);
 	localparam TAG_W = 30 - IDX_W; // Bit 0 is never stored
-	localparam LINE_W = TAG_W + 30 + 1; // 31: dest, 1: flags (conditional)
+	localparam LINE_W = TAG_W + 30 + 2; // 31: dest, 2: flags (conditional, valid)
 
 	logic [WAYID_W-1:0] hit_way_id, lru_way_id;
 	logic               is_hit;
@@ -58,30 +58,21 @@ module turvo32_btb
 
 	logic [ TAG_W-1:0] tag_rdata   [WAYS-1:0];
 	logic [      29:0] dest_rdata  [WAYS-1:0];
-	logic [       0:0] flag_rdata  [WAYS-1:0];
+	logic [       1:0] flag_rdata  [WAYS-1:0];
 	logic              valid_rdata [WAYS-1:0];
 
 	generate
 		for (genvar i = 0; i < WAYS; i++) begin : gen_ways
 			(* ram_style = "block" *)
 			logic [LINE_W-1:0] lines [SETS-1:0];
-			logic              valid [SETS-1:0];
 
 			initial lines = '{default: '0};
-			initial valid = '{default: '0};
 
-			always_ff @(posedge clk_i or negedge rst_ni) begin
-				if (~rst_ni) begin
-					valid_rdata[i] <= '0;
-				end else begin
-					valid_rdata[i] <= valid[pc_d_idx];
-				end
-			end
+			assign valid_rdata[i] = flag_rdata[i][0];
 
 			always_ff @(posedge clk_i) begin
 				if (we_i && w_way_i == i) begin
-					lines[w_pc_idx] <= {w_pc_i[31-:TAG_W], w_tgt_i[31:2], w_is_cond_i};
-					valid[w_pc_idx] <= '1;
+					lines[w_pc_idx] <= {w_pc_i[31-:TAG_W], w_tgt_i[31:2], w_is_cond_i, 1'b1};
 				end
 				{tag_rdata[i], dest_rdata[i], flag_rdata[i]} <= lines[pc_d_idx];
 			end
@@ -91,17 +82,18 @@ module turvo32_btb
 	always_comb begin
 		hit_way_id = '0;
 		is_hit = '0;
+		pc_jump_o = '0;
 
 		for (int i = 0; i < WAYS; i++) begin
 			if (tag_rdata[i] == pc_tag_q && valid_rdata[i]) begin
 				hit_way_id = i;
+				pc_jump_o = {dest_rdata[i], 2'b0};
 				is_hit = '1;
 			end
 		end
 	end
 
-	assign pc_jump_o = {dest_rdata[hit_way_id], 2'b0};
-	assign do_jump_o = is_hit; // only predict uncond. jumps for now
+	assign do_jump_o = is_hit;
 
 	turvo32_lru #(
 		.WAYS   (WAYS),

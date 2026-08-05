@@ -63,12 +63,18 @@ module turvo32_lru
 		if (use_i) initialized[use_addr_i] <= '1;
 	end
 
+	// To reduce timing pressure, r_addr_i is buffered before reading.
+	// (instead of reading asynchronously and buffering the read value)
+	logic [ADDR_W-1:0] r_addr_q;
+
 	always_ff @(posedge clk_i or negedge rst_ni) begin
 		if (~rst_ni) begin
-			lru_way_o <= '0;
+			r_addr_q <= '0;
 		end else begin
-			lru_way_o <= initialized[r_addr_i] ? entries[r_addr_i][(WAYS-1)*ENTBITS+:ENTBITS] : '0;
+			r_addr_q <= r_addr_i;
 		end
 	end
+
+	assign lru_way_o = initialized[r_addr_q] ? entries[r_addr_q][(WAYS-1)*ENTBITS+:ENTBITS] : '0;
 
 endmodule

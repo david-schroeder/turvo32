@@ -74,6 +74,7 @@ module turvo32_stage_ex
     // MEM stage outputs
     output logic [31:0] pc_o,
     output logic [31:0] seq_pc_o,
+    output logic [31:0] linear_pc_o,
     output logic [31:0] instr_o,
     output logic [31:0] rs1_o,
     output mem_op_e     mem_op_o,
@@ -245,10 +246,12 @@ module turvo32_stage_ex
         unique case (wb_src_ex)
             SHIFTER: result_o = shifter_result;
             DIVIDER: result_o = div_result;
-            SEQ_PC : result_o = pc_ex + 4; // TODO: adjust for RVC
+            SEQ_PC : result_o = linear_pc_o; // TODO: adjust for RVC
             default: result_o = alu_result;
         endcase
     end
+
+    assign linear_pc_o = pc_ex + 4;
 
     assign forward_rs1_wb = fw_valid_wb_i && fw_rd_wb_i == ra1_ex;
     assign forward_rs2_wb = fw_valid_wb_i && fw_rd_wb_i == ra2_ex;

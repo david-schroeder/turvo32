@@ -74,7 +74,7 @@ module turvo32_stage_if
             pc_if          <= BOOT_ADDR;
             is_first_cycle <= '1;
         end else begin
-            if (ftq_ready && (!ibus_o.a_valid || ibus_i.a_ready)) begin
+            if (ftq_ready && (!ibus_o.a_valid || ibus_i.a_ready) || do_jump_i) begin
                 pc_if          <= pc_d;
                 is_first_cycle <= '0;
             end
