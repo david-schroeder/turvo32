@@ -69,6 +69,7 @@ module turvo32_top
     logic [         4:0] rd_id;
     logic                reg_we_id;
     wb_src_e             wb_src_id;
+    logic [BTB_WAYW-1:0] btb_way_id;
 
     // EX stage signals
     logic [        31:0] pc_ex;
@@ -91,6 +92,7 @@ module turvo32_top
     wb_src_e             wb_src_ex;
     logic [        31:0] result_ex;
     logic [        31:0] mult_result_ex;
+    logic [BTB_WAYW-1:0] btb_way_ex;
 
     // MEM stage signals
     logic [         4:0] rd_mem;
@@ -111,6 +113,7 @@ module turvo32_top
     logic [        31:0] btb_tgt_mem;
     logic                btb_cond_mem;
     logic                btb_we_mem;
+    logic [BTB_WAYW-1:0] btb_way_mem;
 
     // WB stage signals
     logic [         4:0] rd_wb;
@@ -146,7 +149,7 @@ module turvo32_top
         .instr_o (instr_if),
 
         .btb_way_o   (btb_way_if),
-        .btb_way_i   ('0),
+        .btb_way_i   (btb_way_mem),
         .btb_pc_i    (btb_pc_mem),
         .btb_tgt_i   (btb_tgt_mem),
         .btb_cond_i  (btb_cond_mem),
@@ -156,7 +159,9 @@ module turvo32_top
         .ibus_i
     );
 
-    turvo32_stage_id id_stage_i (
+    turvo32_stage_id #(
+        .BTB_WAYW(BTB_WAYW)
+    ) id_stage_i (
         .clk_i,
         .rst_ni,
 
@@ -198,6 +203,9 @@ module turvo32_top
         .is_div_o    (is_div_id),
         .mem_op_o    (mem_op_id),
         .is_mem_op_o (is_mem_op_id),
+
+        .btb_way_i(btb_way_if),
+        .btb_way_o(btb_way_id),
 
         .rd_o    (rd_id),
         .reg_we_o(reg_we_id),
@@ -263,6 +271,9 @@ module turvo32_top
         .fw_rd_wb_i    (fw_rd_wb),
         .fw_data_wb_i  (fw_data_wb),
 
+        .btb_way_i(btb_way_id),
+        .btb_way_o(btb_way_ex),
+
         .pc_o         (pc_ex),
         .seq_pc_o     (seq_pc_ex),
         .instr_o      (instr_ex),
@@ -312,6 +323,8 @@ module turvo32_top
         .inval_id_o   (inval_id_mem),
         .inval_ex_o   (inval_ex_mem),
 
+        .btb_way_i    (btb_way_ex),
+        .btb_way_o    (btb_way_mem),
         .btb_pc_o     (btb_pc_mem),
         .btb_tgt_o    (btb_tgt_mem),
         .btb_cond_o   (btb_cond_mem),

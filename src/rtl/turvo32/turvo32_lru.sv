@@ -42,7 +42,7 @@ module turvo32_lru
 
 	generate
 		for (genvar i = 0; i < WAYS; i++) begin : gen_ways
-			assign use_mask[i] = used_line[i] == use_way_i;
+			assign use_mask[i] = used_line[i*ENTBITS+:ENTBITS] == use_way_i;
 			assign shift_mask[i] = |use_mask[WAYS-1:i];
 			assign default_line[i*ENTBITS +: ENTBITS] = ENTBITS'(WAYS-i-1);
 		end : gen_ways

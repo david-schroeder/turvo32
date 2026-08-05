@@ -25,9 +25,12 @@ module turvo32_btb
 	input  logic               we_i
 );
 
+	// TODO: rework for IALIGN=16 when RVC support is added
+	//       (until then, using pc[1] in the index wastes 50% of sets)
+
 	localparam IDX_W = $clog2(SETS);
-	localparam TAG_W = 31 - IDX_W; // Bit 0 is never stored
-	localparam LINE_W = TAG_W + 31 + 1; // 31: dest, 1: flags (conditional)
+	localparam TAG_W = 30 - IDX_W; // Bit 0 is never stored
+	localparam LINE_W = TAG_W + 30 + 1; // 31: dest, 1: flags (conditional)
 
 	logic [WAYID_W-1:0] hit_way_id, lru_way_id;
 	logic               is_hit;
@@ -35,11 +38,13 @@ module turvo32_btb
 	logic [IDX_W-1:0] pc_d_idx;
 	logic [TAG_W-1:0] pc_d_tag;
 	logic [TAG_W-1:0] pc_tag_q;
+	logic [IDX_W-1:0] w_pc_idx;
 
 	assign way_o = is_hit ? hit_way_id : lru_way_id;
 
-	assign pc_d_idx = pc_d_i[1+:IDX_W];
+	assign pc_d_idx = pc_d_i[2+:IDX_W];
 	assign pc_d_tag = pc_d_i[31-:TAG_W];
+	assign w_pc_idx = w_pc_i[2+:IDX_W];
 
 	always_ff @(posedge clk_i or negedge rst_ni) begin
 		if (~rst_ni) begin
@@ -52,7 +57,7 @@ module turvo32_btb
 	/* Way generation */
 
 	logic [ TAG_W-1:0] tag_rdata   [WAYS-1:0];
-	logic [      30:0] dest_rdata  [WAYS-1:0];
+	logic [      29:0] dest_rdata  [WAYS-1:0];
 	logic [       0:0] flag_rdata  [WAYS-1:0];
 	logic              valid_rdata [WAYS-1:0];
 
@@ -75,8 +80,8 @@ module turvo32_btb
 
 			always_ff @(posedge clk_i) begin
 				if (we_i && w_way_i == i) begin
-					lines[w_pc_i[1+:IDX_W]] <= {w_pc_i[31-:TAG_W], w_tgt_i[31:1], w_is_cond_i};
-					valid[w_pc_i[1+:IDX_W]] <= '1;
+					lines[w_pc_idx] <= {w_pc_i[31-:TAG_W], w_tgt_i[31:2], w_is_cond_i};
+					valid[w_pc_idx] <= '1;
 				end
 				{tag_rdata[i], dest_rdata[i], flag_rdata[i]} <= lines[pc_d_idx];
 			end
@@ -95,8 +100,8 @@ module turvo32_btb
 		end
 	end
 
-	assign pc_jump_o = {dest_rdata[hit_way_id], 1'b0};
-	assign do_jump_o = is_hit && !flag_rdata[hit_way_id][0]; // only predict uncond. jumps for now
+	assign pc_jump_o = {dest_rdata[hit_way_id], 2'b0};
+	assign do_jump_o = is_hit; // only predict uncond. jumps for now
 
 	turvo32_lru #(
 		.WAYS   (WAYS),
@@ -108,7 +113,7 @@ module turvo32_btb
 		.lru_way_o (lru_way_id),
 		.use_i     (we_i),
 		.use_way_i (w_way_i),
-		.use_addr_i(w_pc_i[1+:IDX_W])
+		.use_addr_i(w_pc_idx)
 	);
 
 endmodule

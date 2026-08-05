@@ -4,7 +4,9 @@
 module turvo32_stage_ex
     import turvo32_pkg::*;
     import tilelink_pkg::*;
-(
+#(
+    parameter int BTB_WAYW = 2
+) (
     input  logic clk_i,
     input  logic rst_ni,
 
@@ -64,6 +66,10 @@ module turvo32_stage_ex
     input  logic        fw_valid_wb_i,
     input  logic [ 4:0] fw_rd_wb_i,
     input  logic [31:0] fw_data_wb_i,
+
+    // Other passthrough signals
+    input  logic [BTB_WAYW-1:0] btb_way_i,
+    output logic [BTB_WAYW-1:0] btb_way_o,
 
     // MEM stage outputs
     output logic [31:0] pc_o,
@@ -159,6 +165,7 @@ module turvo32_stage_ex
             rd_ex          <= '0;
             reg_we_ex      <= '0;
             wb_src_ex      <= ALU;
+            btb_way_o      <= '0;
         end else begin
             if (ps_ready_o) begin
                 valid_ex       <= ps_valid_i;
@@ -186,6 +193,7 @@ module turvo32_stage_ex
                 rd_ex          <= rd_i;
                 reg_we_ex      <= reg_we_i;
                 wb_src_ex      <= wb_src_i;
+                btb_way_o      <= btb_way_i;
             end else begin
                 // EX stage is stalled; handle edge case:
                 // WB stage is not stalled and data will no longer

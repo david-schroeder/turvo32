@@ -4,7 +4,9 @@
 module turvo32_stage_mem
     import turvo32_pkg::*;
     import tilelink_pkg::*;
-(
+#(
+    parameter int BTB_WAYW = 2
+) (
     input  logic clk_i,
     input  logic rst_ni,
 
@@ -63,6 +65,10 @@ module turvo32_stage_mem
     output logic        fw_valid_o,
     output logic [ 4:0] fw_rd_o,
     output logic [31:0] fw_data_o,
+
+    // Other passthrough signals
+    input  logic [BTB_WAYW-1:0] btb_way_i,
+    output logic [BTB_WAYW-1:0] btb_way_o,
 
     // Data bus
     output tl_h2d_t dbus_o,
@@ -138,6 +144,7 @@ module turvo32_stage_mem
             pc_mem          <= '0;
             seq_pc_mem      <= '0;
             instr_mem       <= '0;
+            btb_way_o       <= '0;
         end else begin
             if (ps_ready_o) begin
                 valid_mem       <= ps_valid_i;
@@ -156,6 +163,7 @@ module turvo32_stage_mem
                 pc_mem          <= pc_ex_i;
                 seq_pc_mem      <= seq_pc_ex_i;
                 instr_mem       <= instr_ex_i;
+                btb_way_o       <= btb_way_i;
             end
         end
     end
