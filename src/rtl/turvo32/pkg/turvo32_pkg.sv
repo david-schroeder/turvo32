@@ -143,4 +143,18 @@ package turvo32_pkg;
         exc_cause_e cause;
     } mcause_t;
 
+    typedef struct packed {
+        logic [31:0] address;
+        logic [31:0] mask;
+        logic        idempotent;
+    } pma_region_t;
+
+    /* Platform-level parameters */
+
+    parameter int NUM_PMA_REGIONS = 1;
+    parameter pma_region_t PMA_REGIONS [NUM_PMA_REGIONS-1:0] = '{
+        // 128KiB main BRAM
+        '{ address: 32'h00000000, mask: 32'hFFFF8000, idempotent: '1 }
+    };
+
 endpackage
