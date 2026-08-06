@@ -604,12 +604,16 @@ add wave -noupdate -expand -group Performance -label {Multiply-Use conflict} /sy
 add wave -noupdate -expand -group Performance -label {Load-Use conflict} /system_tb/board_i/DUT/core_i/uproc_i/id_stage_i/stall_load_use
 add wave -noupdate -expand -group Performance -label {CSRR-Use conflict} /system_tb/board_i/DUT/core_i/uproc_i/id_stage_i/stall_csrr_use
 add wave -noupdate -expand -group Performance -label {LSU Stall} /system_tb/board_i/DUT/core_i/uproc_i/mem_stage_i/lsu_i/stall_o
-add wave -noupdate -expand -group Performance -label {Correct Control Flow Prediction} /system_tb/board_i/DUT/core_i/uproc_i/mem_stage_i/branch_pred_right
-add wave -noupdate -expand -group Performance -label {Control Flow Misprediction} /system_tb/board_i/DUT/core_i/uproc_i/mem_stage_i/branch_pred_wrong
+add wave -noupdate -expand -group Performance -label {BTB Hit} /system_tb/board_i/DUT/core_i/uproc_i/mem_stage_i/btb_hit_mem
+add wave -noupdate -expand -group Performance -label {Branch Misprediction} /system_tb/board_i/DUT/core_i/uproc_i/mem_stage_i/branch_pred_wrong
+add wave -noupdate -expand -group Performance -label {Correct Branch Prediction} /system_tb/board_i/DUT/core_i/uproc_i/mem_stage_i/branch_pred_right
+add wave -noupdate -expand -group Performance -label {Correct Control Flow Prediction} /system_tb/board_i/DUT/core_i/uproc_i/mem_stage_i/cf_pred_right
+add wave -noupdate -expand -group Performance -label {Control Flow Misprediction} /system_tb/board_i/DUT/core_i/uproc_i/mem_stage_i/cf_pred_wrong
 add wave -noupdate -label Commit? /system_tb/board_i/DUT/core_i/uproc_i/mem_stage_valid
 add wave -noupdate -label {Committed IP} /system_tb/board_i/DUT/core_i/uproc_i/mem_stage_i/pc_mem
 add wave -noupdate -label {Committed Instruction} -radix riscv_instr /system_tb/board_i/DUT/core_i/uproc_i/mem_stage_i/instr_mem
 add wave -noupdate -label {Next IP} /system_tb/board_i/DUT/core_i/uproc_i/mem_stage_i/priv_i/trap_i/next_arch_pc
+add wave -noupdate -label {Committed Global Branch History} /system_tb/board_i/DUT/core_i/uproc_i/mem_stage_i/ghr_q
 add wave -noupdate -divider {IF Stage}
 add wave -noupdate /system_tb/board_i/DUT/core_i/uproc_i/if_stage_i/pc_d
 add wave -noupdate -radix riscv_instr /system_tb/board_i/DUT/core_i/uproc_i/if_stage_i/instr_o
@@ -761,7 +765,7 @@ add wave -noupdate -expand -group {Regfile Writeback} /system_tb/board_i/DUT/cor
 add wave -noupdate -expand -group {Regfile Writeback} /system_tb/board_i/DUT/core_i/uproc_i/wb_stage_i/reg_we_o
 add wave -noupdate -expand -group {Regfile Writeback} /system_tb/board_i/DUT/core_i/uproc_i/wb_stage_i/reg_wdata_o
 TreeUpdate [SetDefaultTree]
-WaveRestoreCursors {{Cursor 1} {263806239170 fs} 0}
+WaveRestoreCursors {{Cursor 1} {1077211303 fs} 0}
 quietly wave cursor active 1
 configure wave -namecolwidth 413
 configure wave -valuecolwidth 100
@@ -777,4 +781,4 @@ configure wave -griddelta 40
 configure wave -timeline 0
 configure wave -timelineunits ns
 update
-WaveRestoreZoom {0 fs} {172020179 fs}
+WaveRestoreZoom {185262045920 fs} {186533576531 fs}

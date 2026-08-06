@@ -5,7 +5,8 @@ module turvo32_stage_mem
     import turvo32_pkg::*;
     import tilelink_pkg::*;
 #(
-    parameter int BTB_WAYW = 2
+    parameter int BTB_WAYW = 2,
+    parameter int BP_N = 13
 ) (
     input  logic clk_i,
     input  logic rst_ni,
@@ -49,11 +50,24 @@ module turvo32_stage_mem
     output logic        inval_id_o,
     output logic        inval_ex_o,
 
-    // BTB outputs
-    output logic [31:0] btb_pc_o,
-    output logic [31:0] btb_tgt_o,
-    output logic        btb_cond_o,
-    output logic        btb_we_o,
+    // BTB interface
+    input  logic                btb_hit_i,
+    input  logic [BTB_WAYW-1:0] btb_way_i,
+    output logic [BTB_WAYW-1:0] btb_way_o,
+    output logic [        31:0] btb_pc_o,
+    output logic [        31:0] btb_tgt_o,
+    output logic                btb_cond_o,
+    output logic                btb_we_o,
+
+    // Branch Predictor interface
+    input  logic [BP_N-1:0] bp_waddr_i,
+    input  logic [     1:0] bp_wstate_i,
+    output logic            bp_ghr_we_o,
+    output logic [BP_N-1:0] bp_ghr_wd_o,
+    output logic            bp_we_o,
+    output logic [BP_N-1:0] bp_waddr_o,
+    output logic [     1:0] bp_wstate_o,
+    output logic            bp_wtaken_o,
 
     // WB stage outputs
     output logic [ 4:0] rd_o,
@@ -66,10 +80,6 @@ module turvo32_stage_mem
     output logic        fw_valid_o,
     output logic [ 4:0] fw_rd_o,
     output logic [31:0] fw_data_o,
-
-    // Other passthrough signals
-    input  logic [BTB_WAYW-1:0] btb_way_i,
-    output logic [BTB_WAYW-1:0] btb_way_o,
 
     // Data bus
     output tl_h2d_t dbus_o,
@@ -98,6 +108,8 @@ module turvo32_stage_mem
     mcause_t     mcause;
     logic [31:0] csr_rdata;
 
+    logic        cf_pred_right;
+    logic        cf_pred_wrong;
     logic        branch_pred_right;
     logic        branch_pred_wrong;
 
@@ -128,6 +140,8 @@ module turvo32_stage_mem
     logic [31:0] linear_pc_mem;
     logic [31:0] instr_mem; // Unused but useful for debugging (committed instr)
 
+    logic        btb_hit_mem;
+
     always_ff @(posedge clk_i or negedge rst_ni) begin
         if (~rst_ni) begin
             valid_mem       <= '0;
@@ -147,7 +161,10 @@ module turvo32_stage_mem
             seq_pc_mem      <= '0;
             linear_pc_mem   <= '0;
             instr_mem       <= '0;
+            btb_hit_mem     <= '0;
             btb_way_o       <= '0;
+            bp_waddr_o      <= '0;
+            bp_wstate_o     <= '0;
         end else begin
             if (ps_ready_o) begin
                 valid_mem       <= ps_valid_i;
@@ -167,7 +184,10 @@ module turvo32_stage_mem
                 seq_pc_mem      <= seq_pc_ex_i;
                 linear_pc_mem   <= linear_pc_i;
                 instr_mem       <= instr_ex_i;
+                btb_hit_mem     <= btb_hit_i;
                 btb_way_o       <= btb_way_i;
+                bp_waddr_o      <= bp_waddr_i;
+                bp_wstate_o     <= bp_wstate_i;
             end
         end
     end
@@ -190,7 +210,6 @@ module turvo32_stage_mem
     assign rd_o        = rd_mem;
     assign reg_we_o    = reg_we_mem;
     assign wb_src_o    = wb_src_mem;
-
     assign reg_wdata_o = wb_src_mem == CSR ? csr_rdata : ex_result_mem;
 
     assign is_valid_load_o = valid_mem && is_mem_op_mem
@@ -220,11 +239,35 @@ module turvo32_stage_mem
         end
 
         do_jump_o         = next_arch_pc != seq_pc_mem && valid_mem || is_trap;
-        branch_pred_wrong = next_arch_pc != seq_pc_mem && valid_mem;
-        branch_pred_right = next_arch_pc != linear_pc_mem && next_arch_pc == seq_pc_mem && valid_mem;
+        cf_pred_wrong     = next_arch_pc != seq_pc_mem && valid_mem;
+        cf_pred_right     = next_arch_pc != linear_pc_mem && next_arch_pc == seq_pc_mem && valid_mem;
+        branch_pred_right = cf_pred_right && is_branch_mem;
+        branch_pred_wrong = cf_pred_wrong && is_branch_mem && btb_hit_mem;
     end
 
     assign next_true_pc = is_trap ? trap_pc : next_arch_pc;
+
+    assign bp_we_o     = valid_mem && is_branch_mem;
+    assign bp_wtaken_o = take_branch_mem;
+
+    /* GHR */
+
+    logic [BP_N-1:0] ghr_q, ghr_d;
+
+    assign ghr_d = {ghr_q[BP_N-2:0], take_branch_mem};
+
+    always_ff @(posedge clk_i or negedge rst_ni) begin
+        if (~rst_ni) begin
+            ghr_q <= '0;
+        end else begin
+            if (is_branch_mem) begin
+                ghr_q <= ghr_d;
+            end
+        end
+    end
+
+    assign bp_ghr_wd_o = ghr_d;
+    assign bp_ghr_we_o = do_jump_o;
 
     ///////////////////
     //               //

@@ -10,7 +10,8 @@ module turvo32_stage_if
     parameter  logic [31:0] DEBUG_EXC_ADDR = 32'h10001000,
     parameter  int BTB_SETS = 256,
     parameter  int BTB_WAYS = 4,
-    localparam int BTB_WAYW = $clog2(BTB_WAYS)
+    localparam int BTB_WAYW = $clog2(BTB_WAYS),
+    parameter  int BP_N = 13
 ) (
     input  logic clk_i,
     input  logic rst_ni,
@@ -20,19 +21,29 @@ module turvo32_stage_if
     input  logic ns_ready_i,
     input  logic invalidate_i,
 
-    input  logic [31:0] jump_tgt_i,
-    input  logic        do_jump_i,
+    input  logic [        31:0] jump_tgt_i,
+    input  logic                do_jump_i,
 
-    output logic [31:0] pc_o,
-    output logic [31:0] pc_seq_o,
-    output logic [31:0] instr_o,
+    output logic [        31:0] pc_o,
+    output logic [        31:0] pc_seq_o,
+    output logic [        31:0] instr_o,
 
+    output logic                btb_hit_o,
     output logic [BTB_WAYW-1:0] btb_way_o,
     input  logic [BTB_WAYW-1:0] btb_way_i,
     input  logic [        31:0] btb_pc_i,
     input  logic [        31:0] btb_tgt_i,
     input  logic                btb_cond_i,
     input  logic                btb_we_i,
+
+    output logic [    BP_N-1:0] bp_waddr_o,
+    output logic [         1:0] bp_wstate_o,
+    input  logic                bp_ghr_we_i,
+    input  logic [    BP_N-1:0] bp_ghr_wd_i,
+    input  logic                bp_we_i,
+    input  logic [    BP_N-1:0] bp_waddr_i,
+    input  logic [         1:0] bp_wstate_i,
+    input  logic                bp_wtaken_i,
 
     output tl_h2d_t ibus_o,
     input  tl_d2h_t ibus_i
@@ -61,7 +72,12 @@ module turvo32_stage_if
     // BTB
     logic [        31:0] btb_pred_addr;
     logic                btb_says_jump;
+    logic                btb_hit_fetch;
     logic [BTB_WAYW-1:0] btb_way_fetch;
+
+    // BP
+    logic [    BP_N-1:0] bp_waddr_fetch;
+    logic [         1:0] bp_wstate_fetch;
 
     /////////////
     //         //
@@ -123,7 +139,7 @@ module turvo32_stage_if
     /* Fetch Target Queue */
 
     turvo32_ftq #(
-        .ANC_W(32 + BTB_WAYW)
+        .ANC_W(32 + BTB_WAYW + 1 + BP_N + 2)
     ) ftq_i (
         .clk_i,
         .rst_ni,
@@ -131,12 +147,24 @@ module turvo32_stage_if
         .invalidate_i,
 
         .req_address_i(pc_if),
-        .req_anc_i    ({pc_d, btb_way_fetch}),
+        .req_anc_i    ({
+            pc_d,
+            btb_way_fetch,
+            btb_hit_fetch,
+            bp_waddr_fetch,
+            bp_wstate_fetch
+        }),
         .req_valid_i  (valid_if && ftq_ready && ibus_i.a_ready),
         .req_ready_o  (ftq_ready),
 
         .rsp_address_o(pc_o),
-        .rsp_anc_o    ({pc_seq_o, btb_way_o}),
+        .rsp_anc_o    ({
+            pc_seq_o,
+            btb_way_o,
+            btb_hit_o,
+            bp_waddr_o,
+            bp_wstate_o
+        }),
         .rsp_data_o   (instr_o),
         .rsp_valid_o  (ns_valid_o),
         .rsp_ready_i  (ns_ready_i),
@@ -152,7 +180,8 @@ module turvo32_stage_if
 
     turvo32_btb #(
         .SETS(BTB_SETS),
-        .WAYS(BTB_WAYS)
+        .WAYS(BTB_WAYS),
+        .BP_N(BP_N)
     ) btb_i (
         .clk_i,
         .rst_ni,
@@ -160,13 +189,23 @@ module turvo32_stage_if
         .pc_d_i     (pc_d),
         .pc_jump_o  (btb_pred_addr),
         .do_jump_o  (btb_says_jump),
+        .is_hit_o   (btb_hit_fetch),
         .way_o      (btb_way_fetch),
 
         .w_pc_i     (btb_pc_i),
         .w_way_i    (btb_way_i),
         .w_tgt_i    (btb_tgt_i),
         .w_is_cond_i(btb_cond_i),
-        .we_i       (btb_we_i)
+        .we_i       (btb_we_i),
+
+        .bp_waddr_o (bp_waddr_fetch),
+        .bp_wstate_o(bp_wstate_fetch),
+        .bp_ghr_we_i,
+        .bp_ghr_wd_i,
+        .bp_we_i,
+        .bp_waddr_i,
+        .bp_wstate_i,
+        .bp_wtaken_i
     );
 
 endmodule

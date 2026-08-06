@@ -5,7 +5,7 @@ module turvo32_stage_id
     import turvo32_pkg::*;
     import tilelink_pkg::*;
 #(
-    parameter int BTB_WAYW = 2
+    parameter int PASSTHROUGH_W = 2
 ) (
     input  logic clk_i,
     input  logic rst_ni,
@@ -61,8 +61,8 @@ module turvo32_stage_id
     output wb_src_e     wb_src_o,
 
     // Other passthrough signals
-    input  logic [BTB_WAYW-1:0] btb_way_i,
-    output logic [BTB_WAYW-1:0] btb_way_o,
+    input  logic [PASSTHROUGH_W-1:0] passthru_i,
+    output logic [PASSTHROUGH_W-1:0] passthru_o,
 
     // Register write port
     input  logic [ 4:0] rd_i,
@@ -98,18 +98,18 @@ module turvo32_stage_id
 
     always_ff @(posedge clk_i or negedge rst_ni) begin
         if (~rst_ni) begin
-            pc_id     <= '0;
-            pc_seq_o  <= '0;
-            instr_id  <= '0;
-            valid_id  <= '0;
-            btb_way_o <= '0;
+            pc_id      <= '0;
+            pc_seq_o   <= '0;
+            instr_id   <= '0;
+            valid_id   <= '0;
+            passthru_o <= '0;
         end else begin
             if (ps_ready_o) begin
-                pc_id     <= pc_i;
-                pc_seq_o  <= pc_seq_i;
-                instr_id  <= instr_i;
-                valid_id  <= ps_valid_i;
-                btb_way_o <= btb_way_i;
+                pc_id      <= pc_i;
+                pc_seq_o   <= pc_seq_i;
+                instr_id   <= instr_i;
+                valid_id   <= ps_valid_i;
+                passthru_o <= passthru_i;
             end
         end
     end

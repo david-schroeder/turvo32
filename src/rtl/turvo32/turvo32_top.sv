@@ -13,7 +13,9 @@ module turvo32_top
     // Component parameterization
 
     parameter  int BTB_SETS = 256,
-    parameter  int BTB_WAYS = 4
+    parameter  int BTB_WAYS = 4,
+
+    parameter  int BP_N = 13
 ) (
     input  logic clk_i,
     input  logic rst_ni,
@@ -39,10 +41,13 @@ module turvo32_top
 
     // IF stage signals
     localparam int BTB_WAYW = $clog2(BTB_WAYS);
+    logic                btb_hit_if;
     logic [BTB_WAYW-1:0] btb_way_if;
     logic [        31:0] pc_if;
     logic [        31:0] pc_seq_if;
     logic [        31:0] instr_if;
+    logic [    BP_N-1:0] bp_waddr_if;
+    logic [         1:0] bp_wstate_if;
 
     // ID stage signals
     logic [        31:0] pc_id;
@@ -69,7 +74,10 @@ module turvo32_top
     logic [         4:0] rd_id;
     logic                reg_we_id;
     wb_src_e             wb_src_id;
+    logic                btb_hit_id;
     logic [BTB_WAYW-1:0] btb_way_id;
+    logic [    BP_N-1:0] bp_waddr_id;
+    logic [         1:0] bp_wstate_id;
 
     // EX stage signals
     logic [        31:0] pc_ex;
@@ -93,7 +101,10 @@ module turvo32_top
     wb_src_e             wb_src_ex;
     logic [        31:0] result_ex;
     logic [        31:0] mult_result_ex;
+    logic                btb_hit_ex;
     logic [BTB_WAYW-1:0] btb_way_ex;
+    logic [    BP_N-1:0] bp_waddr_ex;
+    logic [         1:0] bp_wstate_ex;
 
     // MEM stage signals
     logic [         4:0] rd_mem;
@@ -115,6 +126,12 @@ module turvo32_top
     logic                btb_cond_mem;
     logic                btb_we_mem;
     logic [BTB_WAYW-1:0] btb_way_mem;
+    logic                bp_we_mem;
+    logic [    BP_N-1:0] bp_waddr_mem;
+    logic [         1:0] bp_wstate_mem;
+    logic                bp_wtaken_mem;
+    logic                bp_ghr_we_mem;
+    logic [    BP_N-1:0] bp_ghr_wd_mem;
 
     // WB stage signals
     logic [         4:0] rd_wb;
@@ -149,6 +166,7 @@ module turvo32_top
         .pc_seq_o(pc_seq_if),
         .instr_o (instr_if),
 
+        .btb_hit_o   (btb_hit_if),
         .btb_way_o   (btb_way_if),
         .btb_way_i   (btb_way_mem),
         .btb_pc_i    (btb_pc_mem),
@@ -156,12 +174,21 @@ module turvo32_top
         .btb_cond_i  (btb_cond_mem),
         .btb_we_i    (btb_we_mem),
 
+        .bp_waddr_o  (bp_waddr_if),
+        .bp_wstate_o (bp_wstate_if),
+        .bp_ghr_we_i (bp_ghr_we_mem),
+        .bp_ghr_wd_i (bp_ghr_wd_mem),
+        .bp_we_i     (bp_we_mem),
+        .bp_waddr_i  (bp_waddr_mem),
+        .bp_wstate_i (bp_wstate_mem),
+        .bp_wtaken_i (bp_wtaken_mem),
+
         .ibus_o,
         .ibus_i
     );
 
     turvo32_stage_id #(
-        .BTB_WAYW(BTB_WAYW)
+        .PASSTHROUGH_W(BTB_WAYW + 1 + BP_N + 2)
     ) id_stage_i (
         .clk_i,
         .rst_ni,
@@ -205,8 +232,18 @@ module turvo32_top
         .mem_op_o    (mem_op_id),
         .is_mem_op_o (is_mem_op_id),
 
-        .btb_way_i(btb_way_if),
-        .btb_way_o(btb_way_id),
+        .passthru_i({
+            btb_way_if,
+            btb_hit_if,
+            bp_waddr_if,
+            bp_wstate_if
+        }),
+        .passthru_o({
+            btb_way_id,
+            btb_hit_id,
+            bp_waddr_id,
+            bp_wstate_id
+        }),
 
         .rd_o    (rd_id),
         .reg_we_o(reg_we_id),
@@ -217,7 +254,9 @@ module turvo32_top
         .reg_we_i   (reg_we_wb)
     );
 
-    turvo32_stage_ex ex_stage_i (
+    turvo32_stage_ex #(
+        .PASSTHROUGH_W(BTB_WAYW + 1 + BP_N + 2)
+    ) ex_stage_i (
         .clk_i,
         .rst_ni,
 
@@ -272,8 +311,18 @@ module turvo32_top
         .fw_rd_wb_i    (fw_rd_wb),
         .fw_data_wb_i  (fw_data_wb),
 
-        .btb_way_i(btb_way_id),
-        .btb_way_o(btb_way_ex),
+        .passthru_i({
+            btb_way_id,
+            btb_hit_id,
+            bp_waddr_id,
+            bp_wstate_id
+        }),
+        .passthru_o({
+            btb_way_ex,
+            btb_hit_ex,
+            bp_waddr_ex,
+            bp_wstate_ex
+        }),
 
         .pc_o         (pc_ex),
         .seq_pc_o     (seq_pc_ex),
@@ -290,7 +339,10 @@ module turvo32_top
         .mult_res_wb_o(mult_result_ex)
     );
 
-    turvo32_stage_mem mem_stage_i (
+    turvo32_stage_mem #(
+        .BTB_WAYW(BTB_WAYW),
+        .BP_N(BP_N)
+    ) mem_stage_i (
         .clk_i,
         .rst_ni,
 
@@ -326,12 +378,21 @@ module turvo32_top
         .inval_id_o   (inval_id_mem),
         .inval_ex_o   (inval_ex_mem),
 
+        .btb_hit_i    (btb_hit_ex),
         .btb_way_i    (btb_way_ex),
         .btb_way_o    (btb_way_mem),
         .btb_pc_o     (btb_pc_mem),
         .btb_tgt_o    (btb_tgt_mem),
         .btb_cond_o   (btb_cond_mem),
         .btb_we_o     (btb_we_mem),
+        .bp_waddr_i   (bp_waddr_ex),
+        .bp_wstate_i  (bp_wstate_ex),
+        .bp_ghr_we_o  (bp_ghr_we_mem),
+        .bp_ghr_wd_o  (bp_ghr_wd_mem),
+        .bp_we_o      (bp_we_mem),
+        .bp_waddr_o   (bp_waddr_mem),
+        .bp_wstate_o  (bp_wstate_mem),
+        .bp_wtaken_o  (bp_wtaken_mem),
 
         .rd_o       (rd_mem),
         .reg_we_o   (reg_we_mem),

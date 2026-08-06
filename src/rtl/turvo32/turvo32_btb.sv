@@ -1,14 +1,15 @@
 // SPDX-License-Identifier: SHL-2.1
 // SPDX-FileCopyrightText: David Schröder 2026
 
-// Branch Target Buffer.
+// Branch Target Buffer with Branch Predictor.
 
 module turvo32_btb
 	import turvo32_pkg::*;
 #(
 	parameter  int WAYS = 4,
 	parameter  int SETS = 128, // Power of two >= 2
-	localparam int WAYID_W = $clog2(WAYS)
+	localparam int WAYID_W = $clog2(WAYS),
+	parameter  int BP_N = 13 // Predictor size 2^(N-2) bytes
 ) (
 	input  logic clk_i,
 	input  logic rst_ni,
@@ -16,13 +17,23 @@ module turvo32_btb
 	input  logic [       31:0] pc_d_i,
 	output logic [       31:0] pc_jump_o,
 	output logic               do_jump_o,
+	output logic               is_hit_o,
 	output logic [WAYID_W-1:0] way_o,
 
 	input  logic [       31:0] w_pc_i,
 	input  logic [       31:0] w_tgt_i,
 	input  logic [WAYID_W-1:0] w_way_i,
 	input  logic               w_is_cond_i,
-	input  logic               we_i
+	input  logic               we_i,
+
+	output logic [   BP_N-1:0] bp_waddr_o,
+	output logic [        1:0] bp_wstate_o,
+	input  logic               bp_ghr_we_i,
+	input  logic [   BP_N-1:0] bp_ghr_wd_i,
+	input  logic               bp_we_i,
+	input  logic [   BP_N-1:0] bp_waddr_i,
+	input  logic [        1:0] bp_wstate_i,
+	input  logic               bp_wtaken_i
 );
 
 	// TODO: rework for IALIGN=16 when RVC support is added
@@ -34,6 +45,8 @@ module turvo32_btb
 
 	logic [WAYID_W-1:0] hit_way_id, lru_way_id;
 	logic               is_hit;
+	logic               is_branch;
+	logic               predict_taken;
 
 	logic [IDX_W-1:0] pc_d_idx;
 	logic [TAG_W-1:0] pc_d_tag;
@@ -60,6 +73,7 @@ module turvo32_btb
 	logic [      29:0] dest_rdata  [WAYS-1:0];
 	logic [       1:0] flag_rdata  [WAYS-1:0];
 	logic              valid_rdata [WAYS-1:0];
+	logic              cond_rdata  [WAYS-1:0];
 
 	generate
 		for (genvar i = 0; i < WAYS; i++) begin : gen_ways
@@ -68,7 +82,7 @@ module turvo32_btb
 
 			initial lines = '{default: '0};
 
-			assign valid_rdata[i] = flag_rdata[i][0];
+			assign {cond_rdata[i], valid_rdata[i]} = flag_rdata[i];
 
 			always_ff @(posedge clk_i) begin
 				if (we_i && w_way_i == i) begin
@@ -82,6 +96,7 @@ module turvo32_btb
 	always_comb begin
 		hit_way_id = '0;
 		is_hit = '0;
+		is_branch = '0;
 		pc_jump_o = '0;
 
 		for (int i = 0; i < WAYS; i++) begin
@@ -89,11 +104,13 @@ module turvo32_btb
 				hit_way_id = i;
 				pc_jump_o = {dest_rdata[i], 2'b0};
 				is_hit = '1;
+				is_branch = cond_rdata[i];
 			end
 		end
 	end
 
-	assign do_jump_o = is_hit;
+	assign is_hit_o  = is_hit;
+	assign do_jump_o = is_hit && (!is_branch || predict_taken);
 
 	turvo32_lru #(
 		.WAYS   (WAYS),
@@ -106,6 +123,28 @@ module turvo32_btb
 		.use_i     (we_i),
 		.use_way_i (w_way_i),
 		.use_addr_i(w_pc_idx)
+	);
+
+	turvo32_gshare #(
+		.N(BP_N)
+	) branch_predictor_i (
+		.clk_i,
+		.rst_ni,
+
+		.pc_d_i,
+		.is_branch_i(is_branch),
+		.btb_hit_i  (is_hit),
+
+		.pred_o     (predict_taken),
+		.lp_addr_o  (bp_waddr_o),
+		.lp_state_o (bp_wstate_o),
+
+		.ghr_we_i   (bp_ghr_we_i),
+		.ghr_wd_i   (bp_ghr_wd_i),
+		.lp_we_i    (bp_we_i),
+		.lp_waddr_i (bp_waddr_i),
+		.lp_wstate_i(bp_wstate_i),
+		.lp_wtaken_i(bp_wtaken_i)
 	);
 
 endmodule
