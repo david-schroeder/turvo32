@@ -78,6 +78,9 @@ _start:
     li  x30,0
     li  x31,0
 
+    li t0, 0xFFFFFFFF
+    lb t0, 0(t0) // cause data bus error
+
     // Initialize various stack pointers, settings / CSRs etc. here
     la t0, _irq_stack_top
     csrrw t0, mscratch, t0 // irq stack top

@@ -5,6 +5,7 @@ module nanosoc_ram
     import tilelink_pkg::*;
 #(
     parameter int LOG_SIZE = 15,
+    parameter logic [31:LOG_SIZE] ADDR_BASE = '0,
     parameter string MEMFILE = ""
 ) (
     input  logic clk_i,
@@ -23,7 +24,7 @@ module nanosoc_ram
     logic [        31:0] rdata;
 
     logic       stall; // response not accepted
-    logic       misalign_q, misalign_d;
+    logic       rsp_error, misalign_d;
     logic [7:0] source_q;
     tl_a_op_e   op_q;
     logic       tx_q;
@@ -75,7 +76,7 @@ module nanosoc_ram
 
     always_ff @(posedge clk_i or negedge rst_ni) begin
         if (~rst_ni) begin
-            misalign_q <= '0;
+            rsp_error <= '0;
             source_q <= '0;
             op_q <= Get;
             tx_q <= '0;
@@ -83,7 +84,7 @@ module nanosoc_ram
             if (~stall) begin
                 tx_q <= tl_i.a_valid;
                 op_q <= tl_i.a_opcode;
-                misalign_q <= misalign_d;
+                rsp_error <= misalign_d || tl_i.a_address[31:LOG_SIZE] != ADDR_BASE;
                 source_q <= tl_i.a_source;
             end
         end
@@ -93,7 +94,7 @@ module nanosoc_ram
         d_valid: tx_q,
         d_opcode: op_q == Get ? AccessAckData : AccessAck,
         d_data: rdata,
-        d_denied: misalign_q,
+        d_denied: tx_q && rsp_error,
         d_source: source_q,
         a_ready: ~stall
     };

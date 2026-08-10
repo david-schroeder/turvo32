@@ -47,6 +47,9 @@ module turvo32_csrs
     logic [63:0] mcycle_d,   mcycle_q;
     logic [63:0] minstret_d, minstret_q;
 
+    logic [63:0] minstret_incr;
+    assign minstret_incr = minstret_q + commit_i;
+
     assign mstatus_o = mstatus_q;
     assign mie_o     = mie_q;
     assign mip_o     = mip_q;
@@ -73,7 +76,7 @@ module turvo32_csrs
         mtval_d    = mtval_q;
         mcycle_d   = mcycle_q + 1;
         // commit comes from WB stage
-        minstret_d = minstret_q + commit_i;
+        minstret_d = minstret_incr;
 
         if (write_en_i) begin
             unique case (csr_sel_i)
@@ -167,9 +170,8 @@ module turvo32_csrs
                 MTVAL: rdata_o = mtval_q;
                 MCYCLE: rdata_o = mcycle_q[31:0];
                 MCYCLEH: rdata_o = mcycle_q[63:32];
-                // commit comes from WB stage, forward D signal for reads
-                MINSTRET: rdata_o = minstret_d[31:0];
-                MINSTRETH: rdata_o = minstret_d[63:32];
+                MINSTRET: rdata_o = minstret_incr[31:0];
+                MINSTRETH: rdata_o = minstret_incr[63:32];
                 default: rdata_o = '0;
             endcase
         end

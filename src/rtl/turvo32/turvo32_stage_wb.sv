@@ -78,7 +78,7 @@ module turvo32_stage_wb
     //             //
     /////////////////
 
-    assign commit_o = valid_wb && ~lsu_stall_i;
+    assign commit_o = valid_wb && ~lsu_stall_i && ~dbus_i.d_denied;
 
     always_comb begin
         unique case (wb_src_wb)
@@ -96,7 +96,7 @@ module turvo32_stage_wb
     assign reg_rd_o    = rd_wb;
     // lsu_rdata_i is not buffered (i.e., it is but in the LSU)
     assign reg_wdata_o = wb_src_wb == LSU ? lsu_rdata_i : wb_data;
-    assign reg_we_o    = valid_wb && reg_we_wb;
+    assign reg_we_o    = commit_o && reg_we_wb;
     assign fw_rd_o     = rd_wb;
     assign fw_data_o   = wb_data;
     assign fw_valid_o  = valid_wb && reg_we_wb && rd_wb != '0;
