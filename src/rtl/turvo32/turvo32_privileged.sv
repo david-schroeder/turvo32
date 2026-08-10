@@ -106,27 +106,27 @@ module turvo32_privileged
         .clk_i,
         .rst_ni,
 
-        .read_en_i     (csr_re),
-        .write_en_i    (csr_we),
-        .csr_sel_i     (csr_sel),
-        .op_i          (csr_op),
-        .operand_i     (csr_operand),
-        .rdata_o       (csr_rdata_o),
+        .read_en_i   (csr_re),
+        .write_en_i  (csr_we),
+        .csr_sel_i   (csr_sel),
+        .op_i        (csr_op),
+        .operand_i   (csr_operand),
+        .rdata_o     (csr_rdata_o),
 
-        .ext_ints_i    (interrupts_i),
-        .trap_i        (trap_o),
-        .trap_cause_i  (mcause_o),
-        .trap_val_i    (trap_val),
-        .epc_i         (trap_epc),
-        .mret_i        (mret),
+        .ext_ints_i  (interrupts_i),
+        .trap_i      (trap_o),
+        .trap_cause_i(mcause_o),
+        .trap_val_i  (trap_val),
+        .epc_i       (trap_epc),
+        .mret_i      (mret),
 
-        .mstatus_o     (mstatus),
-        .mie_o         (mie),
-        .mip_o         (mip),
-        .mtvec_o       (mtvec),
-        .mepc_o        (mepc_o),
+        .mstatus_o   (mstatus),
+        .mie_o       (mie),
+        .mip_o       (mip),
+        .mtvec_o     (mtvec),
+        .mepc_o      (mepc_o),
 
-        .commit_i      (commit_i)
+        .commit_i    (commit_i)
     );
 
     turvo32_privdec privdec_i (

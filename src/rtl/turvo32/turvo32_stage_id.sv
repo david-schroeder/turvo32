@@ -145,12 +145,12 @@ module turvo32_stage_id
     ///////////////////
 
     turvo32_decoder decoder_i (
-        .instr_i     (instr_id),
+        .instr_i  (instr_id),
 
-        .rs1_adr_o   (ra1),
-        .rs2_adr_o   (ra2),
-        .rd_adr_o    (rd_o),
-        .reg_we_o    (reg_we_o),
+        .rs1_adr_o(ra1),
+        .rs2_adr_o(ra2),
+        .rd_adr_o (rd_o),
+        .reg_we_o (reg_we_o),
 
         .alu_op_o,
         .shift_op_o,

@@ -309,12 +309,12 @@ module turvo32_stage_ex
         .clk_i,
         .rst_ni,
 
-        .rs1_i    (rs1_fw),
-        .rs2_i    (rs2_fw),
+        .rs1_i   (rs1_fw),
+        .rs2_i   (rs2_fw),
         .ce_mem_i,
         .ce_wb_i,
-        .op_i     (mult_op_ex),
-        .result_o (mult_res_wb_o)
+        .op_i    (mult_op_ex),
+        .result_o(mult_res_wb_o)
     );
 
     turvo32_divider div_i (

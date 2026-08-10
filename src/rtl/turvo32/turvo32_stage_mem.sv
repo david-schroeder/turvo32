@@ -279,19 +279,19 @@ module turvo32_stage_mem
         .clk_i,
         .rst_ni,
 
-        .data_i     (mem_wdata_mem),
-        .address_i  (ex_result_mem),
-        .is_mem_op_i(is_mem_op_mem),
-        .op_i       (mem_op_mem),
+        .data_i      (mem_wdata_mem),
+        .address_i   (ex_result_mem),
+        .is_mem_op_i (is_mem_op_mem),
+        .op_i        (mem_op_mem),
 
         .data_o      (lsu_rdata_o),
         .misaligned_o(lsu_misaligned),
 
-        .valid_i(valid_mem),
-        .stall_o(lsu_stall),
+        .valid_i     (valid_mem),
+        .stall_o     (lsu_stall),
 
-        .tl_o(dbus_o),
-        .tl_i(dbus_i)
+        .tl_o        (dbus_o),
+        .tl_i        (dbus_i)
     );
 
     turvo32_privileged priv_i (
