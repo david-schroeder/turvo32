@@ -23,6 +23,7 @@ module turvo32_ftq
 
 	output logic [        31:0] rsp_address_o,
 	output logic [        31:0] rsp_data_o,
+	output logic                rsp_error_o,
 	output logic [   ANC_W-1:0] rsp_anc_o,
 	output logic                rsp_valid_o,
 	input  logic                rsp_ready_i,
@@ -31,12 +32,14 @@ module turvo32_ftq
 	output logic                bus_ready_o,
 	input  logic [ENTRY_AW-1:0] bus_src_i,
 	output logic [ENTRY_AW-1:0] bus_src_o,
-	input  logic [        31:0] bus_data_i
+	input  logic [        31:0] bus_data_i,
+	input  logic                bus_error_i
 );
 
 	logic [     31:0] entry_addrs     [ENTRIES-1:0];
 	logic [ANC_W-1:0] entry_ancillary [ENTRIES-1:0];
 	logic [     31:0] entry_data      [ENTRIES-1:0];
+	logic             entry_error     [ENTRIES-1:0];
 
 	logic [ENTRIES-1:0] entry_pending_d, entry_pending_q;
 	logic [ENTRIES-1:0] entry_valid_d,   entry_valid_q;
@@ -71,6 +74,7 @@ module turvo32_ftq
 
 	assign rsp_valid_o   = (bus_rsp_direct ? entry_pending_q[rptr] : entry_valid_q[rptr]) && !invalidate_i;
 	assign rsp_data_o    = bus_rsp_direct ? bus_data_i : entry_data[rptr];
+	assign rsp_error_o   = bus_rsp_direct ? bus_error_i : entry_error[rptr];
 	assign rsp_address_o = is_same_cyc_rsp ? req_address_i : entry_addrs[rptr];
 	assign rsp_anc_o     = is_same_cyc_rsp ? req_anc_i : entry_ancillary[rptr];
 
@@ -114,13 +118,17 @@ module turvo32_ftq
 			entry_addrs[wptr] <= req_address_i;
 			entry_ancillary[wptr] <= req_anc_i;
 		end
-		if (accept_data_writes[bus_src_i]) entry_data[bus_src_i] <= bus_data_i;
+		if (accept_data_writes[bus_src_i]) begin
+			entry_data[bus_src_i] <= bus_data_i;
+			entry_error[bus_src_i] <= bus_error_i;
+		end
 	end
 
 	initial begin
 		entry_ancillary <= '{default: '0};
 		entry_addrs     <= '{default: '0};
 		entry_data      <= '{default: '0};
+		entry_error     <= '{default: '0};
 	end
 
 endmodule

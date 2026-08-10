@@ -12,6 +12,7 @@ module turvo32_trap
 
     input  logic [31:0] pc_i,
     input  logic [31:0] next_arch_pc_i,
+    input  logic        instr_bus_err_i,
     input  logic        instr_valid_i,
     input  logic        stall_i,
 
@@ -80,7 +81,11 @@ module turvo32_trap
     end
 
     logic exception;
-    assign exception = ecall_i | ebreak_i | mem_misaligned_i | mem_bus_err_i;
+    assign exception = ecall_i
+                     | ebreak_i
+                     | mem_misaligned_i
+                     | mem_bus_err_i
+                     | instr_bus_err_i;
 
     assign trap_o = interrupt | exception;
 
@@ -99,6 +104,7 @@ module turvo32_trap
 
         if (exception) begin
             priority case (1'b1)
+                instr_bus_err_i: cause_o.cause = INSN_ACCESS_FAULT;
                 ecall_i: cause_o.cause = ECALL_MMODE;
                 ebreak_i: cause_o.cause = BREAKPOINT;
                 mem_misaligned_i: begin

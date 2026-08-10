@@ -36,6 +36,7 @@ module turvo32_stage_mem
     input  logic [31:0] pc_ex_i,
     input  logic [31:0] seq_pc_ex_i,
     input  logic [31:0] instr_ex_i,
+    input  logic        bus_err_ex_i,
     input  logic [31:0] rs1_ex_i,
     input  logic        commit_i,
 
@@ -143,6 +144,7 @@ module turvo32_stage_mem
     logic [31:0] seq_pc_mem;
     logic [31:0] linear_pc_mem;
     logic [31:0] instr_mem; // Unused but useful for debugging (committed instr)
+    logic        ibus_err_mem;
 
     logic        btb_hit_mem;
 
@@ -165,6 +167,7 @@ module turvo32_stage_mem
             seq_pc_mem      <= '0;
             linear_pc_mem   <= '0;
             instr_mem       <= '0;
+            ibus_err_mem    <= '0;
             btb_hit_mem     <= '0;
             btb_way_o       <= '0;
             bp_waddr_o      <= '0;
@@ -188,6 +191,7 @@ module turvo32_stage_mem
                 seq_pc_mem      <= seq_pc_ex_i;
                 linear_pc_mem   <= linear_pc_i;
                 instr_mem       <= instr_ex_i;
+                ibus_err_mem    <= bus_err_ex_i;
                 btb_hit_mem     <= btb_hit_i;
                 btb_way_o       <= btb_way_i;
                 bp_waddr_o      <= bp_waddr_i;
@@ -310,6 +314,8 @@ module turvo32_stage_mem
         .pc_i            (pc_mem),
         .next_arch_pc_i  (next_arch_pc),
         .stall_i         (~ps_ready_o),
+
+        .instr_bus_err_i (ibus_err_mem),
 
         .mem_misaligned_i(lsu_misaligned),
         .mem_bus_err_i   (lsu_bus_error),

@@ -27,6 +27,7 @@ module turvo32_stage_if
     output logic [        31:0] pc_o,
     output logic [        31:0] pc_seq_o,
     output logic [        31:0] instr_o,
+    output logic                bus_err_o,
 
     output logic                btb_hit_o,
     output logic [BTB_WAYW-1:0] btb_way_o,
@@ -68,6 +69,7 @@ module turvo32_stage_if
     logic [ 1:0] ftq_src_h2d;
     logic [ 1:0] ftq_src_d2h;
     logic [31:0] ftq_bus_data;
+    logic        ftq_bus_error;
 
     // BTB
     logic [        31:0] btb_pred_addr;
@@ -119,6 +121,7 @@ module turvo32_stage_if
     assign ftq_bus_valid = ibus_i.d_valid;
     assign ftq_src_d2h   = ibus_i.d_source;
     assign ftq_bus_data  = ibus_i.d_data;
+    assign ftq_bus_error = ibus_i.d_denied;
 
     assign ibus_o = '{
         a_valid: valid_if && ftq_ready,
@@ -167,6 +170,7 @@ module turvo32_stage_if
             bp_wstate_o
         }),
         .rsp_data_o   (instr_o),
+        .rsp_error_o  (bus_err_o),
         .rsp_valid_o  (ns_valid_o),
         .rsp_ready_i  (ns_ready_i),
 
@@ -174,7 +178,8 @@ module turvo32_stage_if
         .bus_ready_o  (ftq_bus_ready),
         .bus_src_i    (ftq_src_d2h),
         .bus_src_o    (ftq_src_h2d),
-        .bus_data_i   (ftq_bus_data)
+        .bus_data_i   (ftq_bus_data),
+        .bus_error_i  (ftq_bus_error)
     );
 
     /* Branch Target Buffer */

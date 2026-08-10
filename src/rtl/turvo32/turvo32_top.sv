@@ -46,6 +46,7 @@ module turvo32_top
     logic [        31:0] pc_if;
     logic [        31:0] pc_seq_if;
     logic [        31:0] instr_if;
+    logic                bus_err_if;
     logic [    BP_N-1:0] bp_waddr_if;
     logic [         1:0] bp_wstate_if;
 
@@ -53,6 +54,7 @@ module turvo32_top
     logic [        31:0] pc_id;
     logic [        31:0] pc_seq_id;
     logic [        31:0] instr_id;
+    logic                bus_err_id;
     logic [         4:0] ra1_id;
     logic [         4:0] ra2_id;
     logic [        31:0] rs1_id;
@@ -84,6 +86,7 @@ module turvo32_top
     logic [        31:0] seq_pc_ex;
     logic [        31:0] linear_pc_ex;
     logic [        31:0] instr_ex;
+    logic                bus_err_ex;
     logic [        31:0] rs1_ex;
     logic [        31:0] jump_target_ex;
     logic [        31:0] branch_target_ex;
@@ -167,6 +170,7 @@ module turvo32_top
         .pc_o        (pc_if),
         .pc_seq_o    (pc_seq_if),
         .instr_o     (instr_if),
+        .bus_err_o   (bus_err_if),
 
         .btb_hit_o   (btb_hit_if),
         .btb_way_o   (btb_way_if),
@@ -190,7 +194,7 @@ module turvo32_top
     );
 
     turvo32_stage_id #(
-        .PASSTHROUGH_W(BTB_WAYW + 1 + BP_N + 2)
+        .PASSTHROUGH_W(1 + BTB_WAYW + 1 + BP_N + 2)
     ) id_stage_i (
         .clk_i,
         .rst_ni,
@@ -235,12 +239,14 @@ module turvo32_top
         .is_mem_op_o     (is_mem_op_id),
 
         .passthru_i({
+            bus_err_if,
             btb_way_if,
             btb_hit_if,
             bp_waddr_if,
             bp_wstate_if
         }),
         .passthru_o({
+            bus_err_id,
             btb_way_id,
             btb_hit_id,
             bp_waddr_id,
@@ -257,7 +263,7 @@ module turvo32_top
     );
 
     turvo32_stage_ex #(
-        .PASSTHROUGH_W(BTB_WAYW + 1 + BP_N + 2)
+        .PASSTHROUGH_W(1 + BTB_WAYW + 1 + BP_N + 2)
     ) ex_stage_i (
         .clk_i,
         .rst_ni,
@@ -314,12 +320,14 @@ module turvo32_top
         .fw_data_wb_i   (fw_data_wb),
 
         .passthru_i({
+            bus_err_id,
             btb_way_id,
             btb_hit_id,
             bp_waddr_id,
             bp_wstate_id
         }),
         .passthru_o({
+            bus_err_ex,
             btb_way_ex,
             btb_hit_ex,
             bp_waddr_ex,
@@ -371,6 +379,7 @@ module turvo32_top
         .pc_ex_i        (pc_ex),
         .seq_pc_ex_i    (seq_pc_ex),
         .instr_ex_i     (instr_ex),
+        .bus_err_ex_i   (bus_err_ex),
         .rs1_ex_i       (rs1_ex),
         .commit_i       (commit_wb),
 

@@ -12,6 +12,8 @@ module turvo32_privileged
     input  logic [31:0] next_arch_pc_i,
     input  logic        stall_i,
 
+    input  logic        instr_bus_err_i,
+
     input  logic        mem_misaligned_i,
     input  logic        mem_bus_err_i,
     input  mem_op_e     mem_op_i,
@@ -85,6 +87,7 @@ module turvo32_privileged
         .ext_ints_i      (interrupts_i),
         .pc_i            (pc_i),
         .next_arch_pc_i  (next_arch_pc_i),
+        .instr_bus_err_i (instr_bus_err_i),
         .instr_valid_i   (instr_valid),
         .stall_i         (stall_i),
         .mstatus_i       (mstatus),
