@@ -72,6 +72,7 @@ module turvo32_csrs
         mcause_d   = mcause_q;
         mtval_d    = mtval_q;
         mcycle_d   = mcycle_q + 1;
+        // commit comes from WB stage
         minstret_d = minstret_q + commit_i;
 
         if (write_en_i) begin
@@ -166,8 +167,9 @@ module turvo32_csrs
                 MTVAL: rdata_o = mtval_q;
                 MCYCLE: rdata_o = mcycle_q[31:0];
                 MCYCLEH: rdata_o = mcycle_q[63:32];
-                MINSTRET: rdata_o = minstret_q[31:0];
-                MINSTRETH: rdata_o = minstret_q[63:32];
+                // commit comes from WB stage, forward D signal for reads
+                MINSTRET: rdata_o = minstret_d[31:0];
+                MINSTRETH: rdata_o = minstret_d[63:32];
                 default: rdata_o = '0;
             endcase
         end

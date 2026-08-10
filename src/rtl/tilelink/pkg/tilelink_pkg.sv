@@ -32,7 +32,7 @@ package tilelink_pkg;
         tl_d_op_e    d_opcode;
         logic [31:0] d_data;
         logic [ 7:0] d_source;
-        logic        d_error;
+        logic        d_denied;
         logic        a_ready;
     } tl_d2h_t;
 

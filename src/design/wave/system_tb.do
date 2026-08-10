@@ -597,6 +597,7 @@ add wave -noupdate -expand -group {Stage Valids} /system_tb/board_i/DUT/core_i/u
 add wave -noupdate -expand -group {Stage Valids} /system_tb/board_i/DUT/core_i/uproc_i/ex_stage_valid
 add wave -noupdate -expand -group {Stage Valids} /system_tb/board_i/DUT/core_i/uproc_i/mem_stage_valid
 add wave -noupdate -expand -group {Stage Valids} /system_tb/board_i/DUT/core_i/uproc_i/wb_stage_i/valid_wb
+add wave -noupdate -expand -group {Stage Valids} /system_tb/board_i/DUT/core_i/uproc_i/commit_wb
 add wave -noupdate -expand -group {Stage Readies} /system_tb/board_i/DUT/core_i/uproc_i/id_stage_ready
 add wave -noupdate -expand -group {Stage Readies} /system_tb/board_i/DUT/core_i/uproc_i/ex_stage_ready
 add wave -noupdate -expand -group {Stage Readies} /system_tb/board_i/DUT/core_i/uproc_i/mem_stage_ready
@@ -765,7 +766,7 @@ add wave -noupdate -expand -group {Regfile Writeback} /system_tb/board_i/DUT/cor
 add wave -noupdate -expand -group {Regfile Writeback} /system_tb/board_i/DUT/core_i/uproc_i/wb_stage_i/reg_we_o
 add wave -noupdate -expand -group {Regfile Writeback} /system_tb/board_i/DUT/core_i/uproc_i/wb_stage_i/reg_wdata_o
 TreeUpdate [SetDefaultTree]
-WaveRestoreCursors {{Cursor 1} {1077211303 fs} 0}
+WaveRestoreCursors {{Cursor 1} {3364493303 fs} 0}
 quietly wave cursor active 1
 configure wave -namecolwidth 413
 configure wave -valuecolwidth 100
@@ -781,4 +782,4 @@ configure wave -griddelta 40
 configure wave -timeline 0
 configure wave -timelineunits ns
 update
-WaveRestoreZoom {185262045920 fs} {186533576531 fs}
+WaveRestoreZoom {3301852103 fs} {3307511678 fs}

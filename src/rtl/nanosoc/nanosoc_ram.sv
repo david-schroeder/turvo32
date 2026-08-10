@@ -66,7 +66,7 @@ module nanosoc_ram
         d_valid: tx_q,
         d_opcode: op_q == Get ? AccessAckData : AccessAck,
         d_data: rdata,
-        d_error: err_misalign,
+        d_denied: err_misalign,
         d_source: source_q,
         a_ready: ~stall
     };

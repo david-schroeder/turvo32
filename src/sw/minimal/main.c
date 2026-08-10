@@ -12,7 +12,7 @@
 #define write_csr(reg, val) ({ \
     asm volatile ("csrw " reg ", %0" :: "rK"(val)); })
 
-int main(void) {
+/*int main(void) {
     printf("Hello World %d!\n", 567);
 
     uint32_t mcycle = read_csr("mcycle");
@@ -22,5 +22,28 @@ int main(void) {
 
     printf("CPI: %d.%03d\n", cpi_x1k/1000, cpi_x1k%1000);
 
+    return 0;
+}*/
+
+static inline uint64_t bench_instret_delta(void) {
+    uint32_t start, end;
+
+    asm volatile (
+        "csrr %0, minstret   \n\t"   // snapshot #1
+        "addi t0, zero, 1    \n\t"   // instruction 1
+        "addi t0, t0, 1      \n\t"   // instruction 2
+        "lh t0, 0(t0)        \n\t"   // instruction 3
+        "csrr %1, minstret   \n\t"   // snapshot #2
+        : "=r"(start), "=r"(end)
+        :
+        : "t0"
+    );
+
+    return end - start;
+}
+
+int main(void) {
+    uint32_t delta = bench_instret_delta();
+    printf("Instructions retired: %u\n", delta);
     return 0;
 }

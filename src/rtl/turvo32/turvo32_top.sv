@@ -112,6 +112,7 @@ module turvo32_top
     wb_src_e             wb_src_mem;
     logic [        31:0] reg_wdata_mem;
     logic [        31:0] lsu_rdata_mem;
+    logic                lsu_stall_mem;
     logic [        31:0] jump_tgt_mem;
     logic                do_jump_mem;
     logic                is_valid_load_mem;
@@ -134,6 +135,7 @@ module turvo32_top
     logic [    BP_N-1:0] bp_ghr_wd_mem;
 
     // WB stage signals
+    logic                commit_wb;
     logic [         4:0] rd_wb;
     logic                reg_we_wb;
     logic [        31:0] reg_wdata_wb;
@@ -370,7 +372,7 @@ module turvo32_top
         .seq_pc_ex_i    (seq_pc_ex),
         .instr_ex_i     (instr_ex),
         .rs1_ex_i       (rs1_ex),
-        .commit_i       (mem_stage_valid),
+        .commit_i       (commit_wb),
 
         .is_valid_load_o(is_valid_load_mem),
 
@@ -399,6 +401,7 @@ module turvo32_top
         .wb_src_o       (wb_src_mem),
         .reg_wdata_o    (reg_wdata_mem),
         .lsu_rdata_o    (lsu_rdata_mem),
+        .wb_stall_o     (lsu_stall_mem),
 
         .jump_tgt_o     (jump_tgt_mem),
         .do_jump_o      (do_jump_mem),
@@ -416,12 +419,14 @@ module turvo32_top
         .rst_ni,
 
         .ps_valid_i  (mem_stage_valid),
+        .commit_o    (commit_wb),
 
         .rd_i        (rd_mem),
         .reg_we_i    (reg_we_mem),
         .wb_src_i    (wb_src_mem),
         .ex_result_i (reg_wdata_mem),
         .lsu_rdata_i (lsu_rdata_mem),
+        .lsu_stall_i (lsu_stall_mem),
         .ex_mul_res_i(mult_result_ex),
 
         .reg_rd_o    (rd_wb),

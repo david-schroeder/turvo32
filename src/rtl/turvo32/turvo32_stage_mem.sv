@@ -75,6 +75,7 @@ module turvo32_stage_mem
     output wb_src_e     wb_src_o,
     output logic [31:0] reg_wdata_o,
     output logic [31:0] lsu_rdata_o,
+    output logic        wb_stall_o,
 
     // Forwarding outputs
     output logic        fw_valid_o,
@@ -96,6 +97,8 @@ module turvo32_stage_mem
     /////////////
 
     logic        lsu_stall;
+    logic        lsu_wb_stall;
+    logic        lsu_pending_rsp;
     logic        lsu_misaligned;
 
     logic [31:0] next_arch_pc;
@@ -250,6 +253,8 @@ module turvo32_stage_mem
     assign bp_we_o     = valid_mem && is_branch_mem;
     assign bp_wtaken_o = take_branch_mem;
 
+    assign wb_stall_o = lsu_wb_stall;
+
     /* GHR */
 
     logic [BP_N-1:0] ghr_q, ghr_d;
@@ -289,6 +294,7 @@ module turvo32_stage_mem
 
         .valid_i     (valid_mem),
         .stall_o     (lsu_stall),
+        .wb_stall_o  (lsu_wb_stall),
 
         .tl_o        (dbus_o),
         .tl_i        (dbus_i)

@@ -10,6 +10,7 @@ module turvo32_stage_wb
 
     // Stage control
     input  logic ps_valid_i,
+    output logic commit_o,
 
     // MEM stage inputs
     input  logic [ 4:0] rd_i,
@@ -17,6 +18,7 @@ module turvo32_stage_wb
     input  wb_src_e     wb_src_i,
     input  logic [31:0] ex_result_i,
     input  logic [31:0] lsu_rdata_i,
+    input  logic        lsu_stall_i,
     input  logic [31:0] ex_mul_res_i,
 
     // Regfile writeback outputs
@@ -60,11 +62,13 @@ module turvo32_stage_wb
             wb_src_wb    <= ALU;
             ex_result_wb <= '0;
         end else begin
-            valid_wb     <= ps_valid_i;
-            rd_wb        <= rd_i;
-            reg_we_wb    <= reg_we_i;
-            wb_src_wb    <= wb_src_i;
-            ex_result_wb <= ex_result_i;
+            if (~lsu_stall_i) begin
+                valid_wb     <= ps_valid_i;
+                rd_wb        <= rd_i;
+                reg_we_wb    <= reg_we_i;
+                wb_src_wb    <= wb_src_i;
+                ex_result_wb <= ex_result_i;
+            end
         end
     end
 
@@ -73,6 +77,8 @@ module turvo32_stage_wb
     // Stage Logic //
     //             //
     /////////////////
+
+    assign commit_o = valid_wb && ~lsu_stall_i;
 
     always_comb begin
         unique case (wb_src_wb)

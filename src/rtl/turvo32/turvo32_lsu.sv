@@ -23,6 +23,7 @@ module turvo32_lsu
 
     input  logic        valid_i, // From MEM stage
     output logic        stall_o, // To MEM stage
+    output logic        wb_stall_o, // To WB stage
 
     output tl_h2d_t     tl_o,
     input  tl_d2h_t     tl_i
@@ -91,6 +92,8 @@ module turvo32_lsu
     assign a_exchange = tl_o.a_valid && tl_i.a_ready;
     assign d_exchange = delayed_rsp.d_valid; // d_ready always 1
     assign is_valid_mem_op = is_mem_op_i && valid_i && !misaligned_o;
+
+    assign wb_stall_o = state_q == AwaitData && !d_exchange;
 
     always_comb begin
         unique case (state_q)
