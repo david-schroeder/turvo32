@@ -20,6 +20,7 @@ module turvo32_lsu
 
     output logic [31:0] data_o,
     output logic        misaligned_o,
+    output logic        bus_error_o,
 
     input  logic        valid_i, // From MEM stage
     output logic        stall_o, // To MEM stage
@@ -179,6 +180,8 @@ module turvo32_lsu
         a_source: '0, // Only ever one outstanding request
         d_ready: '1
     };
+
+    assign bus_error_o = tl_i.d_valid && tl_o.d_ready && tl_i.d_denied;
 
     /* Load logic */
 

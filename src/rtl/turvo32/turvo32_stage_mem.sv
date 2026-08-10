@@ -100,6 +100,7 @@ module turvo32_stage_mem
     logic        lsu_wb_stall;
     logic        lsu_pending_rsp;
     logic        lsu_misaligned;
+    logic        lsu_bus_error;
 
     logic [31:0] next_arch_pc;
     logic [31:0] next_true_pc;
@@ -291,6 +292,7 @@ module turvo32_stage_mem
 
         .data_o      (lsu_rdata_o),
         .misaligned_o(lsu_misaligned),
+        .bus_error_o (lsu_bus_error),
 
         .valid_i     (valid_mem),
         .stall_o     (lsu_stall),
@@ -310,6 +312,7 @@ module turvo32_stage_mem
         .stall_i         (~ps_ready_o),
 
         .mem_misaligned_i(lsu_misaligned),
+        .mem_bus_err_i   (lsu_bus_error),
         .mem_op_i        (mem_op_mem),
         .mem_addr_i      (ex_result_mem),
 

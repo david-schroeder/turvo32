@@ -13,6 +13,7 @@ module turvo32_privileged
     input  logic        stall_i,
 
     input  logic        mem_misaligned_i,
+    input  logic        mem_bus_err_i,
     input  mem_op_e     mem_op_i,
     input  logic [31:0] mem_addr_i,
 
@@ -93,6 +94,7 @@ module turvo32_privileged
         .ecall_i         (ecall),
         .ebreak_i        (ebreak),
         .mem_misaligned_i(mem_misaligned_i && instr_valid),
+        .mem_bus_err_i   (mem_bus_err_i),
         .mem_op_i        (mem_op_i),
         .mem_addr_i      (mem_addr_i),
         .trap_o          (trap_o),

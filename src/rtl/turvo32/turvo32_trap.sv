@@ -25,6 +25,7 @@ module turvo32_trap
     input  logic        ecall_i,
     input  logic        ebreak_i,
     input  logic        mem_misaligned_i,
+    input  logic        mem_bus_err_i,
     input  mem_op_e     mem_op_i,
     input  logic [31:0] mem_addr_i,
 
@@ -44,6 +45,8 @@ module turvo32_trap
 
     logic [31:0] next_arch_pc_q;
     logic [31:0] current_pc_q;
+    logic [31:0] mem_addr_q;
+    mem_op_e     mem_op_q;
     logic [31:0] next_arch_pc;
     logic [31:0] current_pc;
 
@@ -60,6 +63,8 @@ module turvo32_trap
             interrupt_cause_q <= '{interrupt: '1, cause: exc_cause_e'('0)};
             next_arch_pc_q <= '0;
             current_pc_q <= '0;
+            mem_addr_q <= '0;
+            mem_op_q <= LB;
         end else begin
             valid_int_q <= |valid_ints;
             for (int i = 0; i < 32; i++) begin
@@ -68,12 +73,14 @@ module turvo32_trap
             if (instr_valid_i) begin
                 next_arch_pc_q <= next_arch_pc_i;
                 current_pc_q <= pc_i;
+                mem_addr_q <= mem_addr_i;
+                mem_op_q <= mem_op_i;
             end
         end
     end
 
     logic exception;
-    assign exception = ecall_i | ebreak_i | mem_misaligned_i;
+    assign exception = ecall_i | ebreak_i | mem_misaligned_i | mem_bus_err_i;
 
     assign trap_o = interrupt | exception;
 
@@ -104,9 +111,19 @@ module turvo32_trap
 
                     trap_val_o = mem_addr_i;
                 end
+                mem_bus_err_i: begin
+                    unique case (mem_op_q)
+                        SB,
+                        SH,
+                        SW: cause_o.cause = STORE_ACCESS_FAULT;
+                        default: cause_o.cause = LOAD_ACCESS_FAULT;
+                    endcase
+
+                    trap_val_o = mem_addr_q;
+                end
             endcase
 
-            epc_o = current_pc;
+            epc_o = mem_bus_err_i ? current_pc_q : current_pc;
         end
 
     end
