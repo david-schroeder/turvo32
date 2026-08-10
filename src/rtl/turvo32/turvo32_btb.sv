@@ -98,6 +98,7 @@ module turvo32_btb
 		is_hit = '0;
 		is_branch = '0;
 		pc_jump_o = '0;
+		do_jump_o = '0;
 
 		for (int i = 0; i < WAYS; i++) begin
 			if (tag_rdata[i] == pc_tag_q && valid_rdata[i]) begin
@@ -105,12 +106,12 @@ module turvo32_btb
 				pc_jump_o = {dest_rdata[i], 2'b0};
 				is_hit = '1;
 				is_branch = cond_rdata[i];
+				do_jump_o = !cond_rdata[i] || predict_taken;
 			end
 		end
 	end
 
 	assign is_hit_o  = is_hit;
-	assign do_jump_o = is_hit && (!is_branch || predict_taken);
 
 	turvo32_lru #(
 		.WAYS   (WAYS),

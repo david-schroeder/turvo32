@@ -108,10 +108,11 @@ module turvo32_stage_if
     assign pc_seq = pc_if + 4;
 
     always_comb begin
-        unique case (1'b1)
+        priority case (1'b1)
             is_first_cycle : pc_d = BOOT_ADDR; // First cycle after boot
             do_jump_i      : pc_d = jump_tgt_i;
-            default        : pc_d = btb_says_jump ? btb_pred_addr : pc_seq;
+            btb_says_jump  : pc_d = btb_pred_addr;
+            default        : pc_d = pc_seq;
         endcase
     end
 
