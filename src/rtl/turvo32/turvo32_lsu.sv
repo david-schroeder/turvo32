@@ -2,9 +2,6 @@
 // SPDX-FileCopyrightText: David Schröder 2026
 
 // TURVo32 Load-Store Unit.
-// May have exactly one outstanding memory request.
-// This simplifies RISC-V spec compliance while enabling
-// bus errors in the future.
 
 module turvo32_lsu
     import turvo32_pkg::*;
@@ -18,9 +15,9 @@ module turvo32_lsu
     input  logic        is_mem_op_i,
     input  mem_op_e     op_i,
 
-    output logic [31:0] data_o,
-    output logic        misaligned_o,
-    output logic        bus_error_o,
+    output logic [31:0] data_o,       // valid on cycle after request unless wb_stall_o
+    output logic        bus_error_o,  // valid with data_o
+    output logic        misaligned_o, // valid on request cycle
 
     input  logic        valid_i, // From MEM stage
     output logic        stall_o, // To MEM stage
@@ -30,11 +27,13 @@ module turvo32_lsu
     input  tl_d2h_t     tl_i
 );
 
-    /* Common access logic */
+    /* Access logic */
 
-    logic [3:0] mask;
-    logic [1:0] size;
-    tl_a_op_e   op;
+    logic [ 3:0] mask;
+    logic [ 1:0] size;
+    logic [31:0] wdata;
+    logic [31:0] rdata;
+    tl_a_op_e    op;
 
     always_comb begin
         unique case (op_i)
@@ -85,19 +84,20 @@ module turvo32_lsu
             // Misaligned cases don't access memory
             default: mask = 4'b0000;
         endcase
-    end
 
-    /* Store logic */
-
-    logic [31:0] wdata;
-
-    always_comb begin
         unique case (op_i)
             SB: wdata = {data_i[7:0], data_i[7:0], data_i[7:0], data_i[7:0]};
             SH: wdata = {data_i[15:0], data_i[15:0]};
             default: wdata = data_i;
         endcase
     end
+
+    /* Bus interface logic */
+
+    logic a_exchange;
+    logic d_exchange;
+    assign a_exchange = tl_o.a_valid && tl_i.a_ready;
+    assign d_exchange = delayed_rsp.d_valid; // d_ready always 1
 
     /* Delayed response logic */
     // See section 4.2 of the TileLink spec v1.9.3
@@ -113,11 +113,13 @@ module turvo32_lsu
             bus_rsp_q <= tl_i;
             // Use bus value from registered input iff response was
             // accepted in same cycle as request was issued
-            delay_rsp <= tl_o.a_valid && tl_i.d_valid && tl_o.d_ready;
+            delay_rsp <= a_exchange && d_exchange && tl_o.a_source == tl_i.d_source;
         end
     end
 
     assign delayed_rsp = delay_rsp ? bus_rsp_q : tl_i;
+    assign rdata = delayed_rsp.d_data;
+    assign bus_error_o = d_exchange && tl_i.d_denied;
 
     /* Bus FSM */
 
@@ -127,14 +129,9 @@ module turvo32_lsu
     } lsu_state_e;
 
     lsu_state_e state_d, state_q;
-
-    logic a_exchange;
-    logic d_exchange;
     logic is_valid_mem_op;
-    assign a_exchange = tl_o.a_valid && tl_i.a_ready;
-    assign d_exchange = delayed_rsp.d_valid; // d_ready always 1
-    assign is_valid_mem_op = is_mem_op_i && valid_i && !misaligned_o;
 
+    assign is_valid_mem_op = is_mem_op_i && valid_i && !misaligned_o;
     assign wb_stall_o = state_q == AwaitData && !d_exchange;
 
     always_comb begin
@@ -165,11 +162,6 @@ module turvo32_lsu
         end
     end
 
-    /* Bus interface */
-
-    logic [31:0] rdata;
-    assign rdata = delayed_rsp.d_valid ? delayed_rsp.d_data : '0;
-
     assign tl_o = '{
         a_valid: is_valid_mem_op && state_q == Idle,
         a_opcode: op,
@@ -180,8 +172,6 @@ module turvo32_lsu
         a_source: '0, // Only ever one outstanding request
         d_ready: '1
     };
-
-    assign bus_error_o = tl_i.d_valid && tl_o.d_ready && tl_i.d_denied;
 
     /* Load logic */
 

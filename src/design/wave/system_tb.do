@@ -610,7 +610,7 @@ add wave -noupdate -expand -group Performance -label {Branch Misprediction} /sys
 add wave -noupdate -expand -group Performance -label {Correct Branch Prediction} /system_tb/board_i/DUT/core_i/uproc_i/mem_stage_i/branch_pred_right
 add wave -noupdate -expand -group Performance -label {Correct Control Flow Prediction} /system_tb/board_i/DUT/core_i/uproc_i/mem_stage_i/cf_pred_right
 add wave -noupdate -expand -group Performance -label {Control Flow Misprediction} /system_tb/board_i/DUT/core_i/uproc_i/mem_stage_i/cf_pred_wrong
-add wave -noupdate -expand -group Performance -label {Load-Use count} /system_tb/board_i/DUT/core_i/uproc_i/id_stage_i/load_use_cntr
+add wave -noupdate -expand -group Performance -label {Stalled Idempotent Memory requests} /system_tb/board_i/DUT/core_i/uproc_i/mem_stage_i/lsu_i/dbg_cnt
 add wave -noupdate -label Commit? /system_tb/board_i/DUT/core_i/uproc_i/mem_stage_valid
 add wave -noupdate -label {Committed IP} /system_tb/board_i/DUT/core_i/uproc_i/mem_stage_i/pc_mem
 add wave -noupdate -label {Committed Instruction} -radix riscv_instr /system_tb/board_i/DUT/core_i/uproc_i/mem_stage_i/instr_mem
@@ -783,4 +783,4 @@ configure wave -griddelta 40
 configure wave -timeline 0
 configure wave -timelineunits ns
 update
-WaveRestoreZoom {1287884300 ps} {1335150930872 fs}
+WaveRestoreZoom {252516700672 fs} {253590387692 fs}
