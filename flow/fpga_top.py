@@ -147,7 +147,7 @@ class FpgaTop(Block):
 
                     t.start_gui()
 
-                    # Global histogram
+                    """# Global histogram
                     t.create_slack_histogram(
                         num_bins=NUM_HISTOGRAM_BINS,
                         slack_less_than=2.5,
@@ -196,7 +196,7 @@ class FpgaTop(Block):
                                 significant_digits=3,
                                 name=clock_name + "_wns_hist",
                                 to=clk
-                            )
+                            )"""
 
     @task(requires={'pnr':'.pnr'})
     def bitstream(self, cwd, pnr):

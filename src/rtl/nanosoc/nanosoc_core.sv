@@ -17,6 +17,9 @@ module nanosoc_core (
     tl_h2d_t ibus_req, dbus_req;
     tl_d2h_t ibus_rsp, dbus_rsp;
 
+    tl_h2d_t dbus_reqs [1:0];
+    tl_d2h_t dbus_rsps [1:0];
+
     turvo32_top uproc_i (
         .clk_i,
         .rst_ni,
@@ -43,8 +46,27 @@ module nanosoc_core (
     ) dram_i (
         .clk_i,
         .rst_ni,
-        .tl_i  (dbus_req),
-        .tl_o  (dbus_rsp)
+        .tl_i  (dbus_reqs[0]),
+        .tl_o  (dbus_rsps[0])
+    );
+
+    nanosoc_ram #(
+        .LOG_SIZE(10)
+    ) outram_i (
+        .clk_i,
+        .rst_ni,
+        .tl_i  (dbus_reqs[1]),
+        .tl_o  (dbus_rsps[1])
+    );
+
+    tilelink_mux_1n #(
+        .N            (2),
+        .DEVSEL_BIT_LO(31)
+    ) tl_mux_i (
+        .host_i  (dbus_req),
+        .host_o  (dbus_rsp),
+        .device_o(dbus_reqs),
+        .device_i(dbus_rsps)
     );
 
     always_comb begin

@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <stdint.h>
 
-static uint8_t *textbuf = (uint8_t *)0x400;
+static uint8_t *textbuf = (uint8_t *)0x80000400;
 
 static size_t
 stdin_read(FILE *fp, char *bp, size_t n) {

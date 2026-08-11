@@ -26,6 +26,7 @@ module nanosoc_ram
     logic       stall; // response not accepted
     logic       rsp_error, misalign_d;
     logic [7:0] source_q;
+    logic [1:0] size_q;
     tl_a_op_e   op_q;
     logic       tx_q;
 
@@ -78,6 +79,7 @@ module nanosoc_ram
         if (~rst_ni) begin
             rsp_error <= '0;
             source_q <= '0;
+            size_q <= '0;
             op_q <= Get;
             tx_q <= '0;
         end else begin
@@ -85,6 +87,7 @@ module nanosoc_ram
                 tx_q <= tl_i.a_valid;
                 op_q <= tl_i.a_opcode;
                 rsp_error <= misalign_d || tl_i.a_address[31:LOG_SIZE] != ADDR_BASE;
+                size_q <= tl_i.a_size;
                 source_q <= tl_i.a_source;
             end
         end
@@ -95,12 +98,14 @@ module nanosoc_ram
         d_opcode: op_q == Get ? AccessAckData : AccessAck,
         d_data: rdata,
         d_denied: tx_q && rsp_error,
+        d_size: size_q,
         d_source: source_q,
         a_ready: ~stall
     };
 
     initial begin
-        $readmemh(MEMFILE, mem);
+        if (MEMFILE != "") $readmemh(MEMFILE, mem);
+        else mem <= '{default: '0};
     end
 
 endmodule
