@@ -3,6 +3,7 @@
 
 // NanoSoC -- minimal SoC for TURVo32.
 
+(* DONT_TOUCH = "true" *)
 module nanosoc_core (
     input  logic clk_i, // 100MHz clock
     input  logic rst_ni,
@@ -14,40 +15,36 @@ module nanosoc_core (
 
     `define STRINGIFY(x) `"x`"
 
-    tl_h2d_t ibus_req, dbus_req;
-    tl_d2h_t ibus_rsp, dbus_rsp;
+    tl_h2d_t dbus_req, ram_req;
+    tl_d2h_t dbus_rsp, ram_rsp;
 
     tl_h2d_t dbus_reqs [1:0];
     tl_d2h_t dbus_rsps [1:0];
+
+    tl_h2d_t ram_reqs [1:0];
+    tl_d2h_t ram_rsps [1:0];
+
+    assign ram_reqs[1] = dbus_reqs[0];
+    assign dbus_rsps[0] = ram_rsps[1];
 
     turvo32_top uproc_i (
         .clk_i,
         .rst_ni,
         .interrupts_i('0),
-        .ibus_o      (ibus_req),
-        .ibus_i      (ibus_rsp),
+        .ibus_o      (ram_reqs[0]),
+        .ibus_i      (ram_rsps[0]),
         .dbus_o      (dbus_req),
         .dbus_i      (dbus_rsp)
     );
 
     nanosoc_ram #(
-        .LOG_SIZE(17),
+        .LOG_SIZE(18),
         .MEMFILE(`STRINGIFY(`INIT_MEM_FILE))
-    ) iram_i (
+    ) ram_i (
         .clk_i,
         .rst_ni,
-        .tl_i  (ibus_req),
-        .tl_o  (ibus_rsp)
-    );
-
-    nanosoc_ram #(
-        .LOG_SIZE(17),
-        .MEMFILE(`STRINGIFY(`INIT_MEM_FILE))
-    ) dram_i (
-        .clk_i,
-        .rst_ni,
-        .tl_i  (dbus_reqs[0]),
-        .tl_o  (dbus_rsps[0])
+        .tl_i  (ram_req),
+        .tl_o  (ram_rsp)
     );
 
     nanosoc_ram #(
@@ -62,11 +59,22 @@ module nanosoc_core (
     tilelink_mux_1n #(
         .N            (2),
         .DEVSEL_BIT_LO(31)
-    ) tl_mux_i (
+    ) tl_mux_1n_i (
         .host_i  (dbus_req),
         .host_o  (dbus_rsp),
         .device_o(dbus_reqs),
         .device_i(dbus_rsps)
+    );
+
+    tilelink_mux_m1 #(
+        .N(2)
+    ) tl_mux_m1_i (
+        .clk_i,
+        .rst_ni,
+        .host_i  (ram_reqs),
+        .host_o  (ram_rsps),
+        .device_o(ram_req),
+        .device_i(ram_rsp)
     );
 
     always_comb begin
