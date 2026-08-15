@@ -103,6 +103,7 @@ module turvo32_stage_mem
     logic        lsu_misaligned;
     logic        lsu_bus_error;
 
+    logic [31:0] next_pc_ex;
     logic [31:0] next_arch_pc;
     logic [31:0] next_true_pc;
     logic        is_mret;
@@ -140,6 +141,8 @@ module turvo32_stage_mem
     logic        is_branch_mem;
     logic        take_branch_mem;
 
+    logic [31:0] next_pc_ex_mem;
+
     logic [31:0] pc_mem;
     logic [31:0] seq_pc_mem;
     logic [31:0] linear_pc_mem;
@@ -166,6 +169,7 @@ module turvo32_stage_mem
             pc_mem          <= '0;
             seq_pc_mem      <= '0;
             linear_pc_mem   <= '0;
+            next_pc_ex_mem  <= '0;
             instr_mem       <= '0;
             ibus_err_mem    <= '0;
             btb_hit_mem     <= '0;
@@ -190,6 +194,7 @@ module turvo32_stage_mem
                 pc_mem          <= pc_ex_i;
                 seq_pc_mem      <= seq_pc_ex_i;
                 linear_pc_mem   <= linear_pc_i;
+                next_pc_ex_mem  <= next_pc_ex;
                 instr_mem       <= instr_ex_i;
                 ibus_err_mem    <= bus_err_ex_i;
                 btb_hit_mem     <= btb_hit_i;
@@ -223,7 +228,7 @@ module turvo32_stage_mem
     assign is_valid_load_o = valid_mem && is_mem_op_mem
                            && mem_op_mem inside {LB, LBU, LH, LHU, LW};
 
-    assign fw_valid_o = rd_mem != '0 && reg_we_mem && valid_mem;
+    assign fw_valid_o = reg_we_mem && valid_mem;
     assign fw_rd_o    = rd_mem;
     // Forwarded data never comes from the bus (load-use stall)
     // TODO: check if we can avoid CSRR-use stalls by setting this
@@ -239,12 +244,16 @@ module turvo32_stage_mem
     assign is_exception = is_trap && !mcause.interrupt;
 
     always_comb begin
-        next_arch_pc = linear_pc_mem;
-        if (valid_mem) begin
-            if (is_jump_mem) next_arch_pc = jump_tgt_mem;
-            if (is_branch_mem && take_branch_mem) next_arch_pc = branch_tgt_mem;
-            if (is_mret) next_arch_pc = mepc;
+        next_pc_ex = linear_pc_i;
+        if (ps_valid_i) begin
+            if (is_jump_i) next_pc_ex = jump_tgt_i;
+            if (is_branch_i && take_branch_i) next_pc_ex = branch_tgt_i;
         end
+    end
+
+    always_comb begin
+        next_arch_pc = next_pc_ex_mem;
+        if (valid_mem && is_mret) next_arch_pc = mepc;
 
         do_jump_o         = next_arch_pc != seq_pc_mem && valid_mem || is_trap;
         cf_pred_wrong     = next_arch_pc != seq_pc_mem && valid_mem;

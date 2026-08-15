@@ -99,6 +99,6 @@ module turvo32_stage_wb
     assign reg_we_o    = commit_o && reg_we_wb;
     assign fw_rd_o     = rd_wb;
     assign fw_data_o   = wb_data;
-    assign fw_valid_o  = valid_wb && reg_we_wb && rd_wb != '0;
+    assign fw_valid_o  = valid_wb && reg_we_wb;
 
 endmodule

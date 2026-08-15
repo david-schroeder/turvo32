@@ -40,7 +40,7 @@ module turvo32_divider
             DIV,
             DIVU,
             REM,
-            REMU: div_start = is_div_i;
+            REMU: div_start = is_div_i; // TODO: revise? this seems trivial
             default: div_start = '0;
         endcase
     end

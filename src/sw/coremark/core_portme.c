@@ -59,6 +59,10 @@ volatile ee_s32 seed5_volatile = 0;
 */
 
 
+void report_interrupt(void) {
+    printf("(interrupted)");
+}
+
 /* Clock- and timing-related utilities */
 #define VCO_MHZ 1000
 

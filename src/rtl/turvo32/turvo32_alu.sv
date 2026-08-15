@@ -12,10 +12,10 @@ module turvo32_alu
     output logic        take_branch_o
 );
 
-    logic lt, ltu, zero;
+    logic lt, ltu, eq;
     assign lt  = $signed(a_i) < $signed(b_i);
     assign ltu = a_i < b_i;
-    assign zero = res_o == '0;
+    assign eq = a_i == b_i;
 
     always_comb begin
         unique case (op_i)
@@ -29,8 +29,8 @@ module turvo32_alu
         endcase
 
         unique case (branch_i)
-            BEQ : take_branch_o = zero;
-            BNE : take_branch_o = ~zero;
+            BEQ : take_branch_o = eq;
+            BNE : take_branch_o = ~eq;
             BLT : take_branch_o = lt;
             BGE : take_branch_o = ~lt;
             BLTU: take_branch_o = ltu;

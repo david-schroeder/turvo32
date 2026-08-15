@@ -203,6 +203,7 @@ module turvo32_stage_ex
                 if (forward_rs1_wb) rs1_ex <= fw_data_wb_i;
                 if (forward_rs2_wb) rs2_ex <= fw_data_wb_i;
             end
+            if (invalidate_i) valid_ex <= '0;
         end
     end
 

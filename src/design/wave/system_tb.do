@@ -597,6 +597,7 @@ add wave -noupdate /system_tb/board_i/DUT/core_i/ram_rsp
 add wave -noupdate /system_tb/board_i/DUT/core_i/io_i
 add wave -noupdate /system_tb/board_i/DUT/core_i/io_o
 add wave -noupdate -label {Program Output} -radix ascii /system_tb/board_i/DUT/core_i/outram_i/Output
+add wave -noupdate /system_tb/board_i/DUT/core_i/interrupts
 add wave -noupdate -divider {M:1 mux}
 add wave -noupdate /system_tb/board_i/DUT/core_i/tl_mux_m1_i/a_exchange
 add wave -noupdate /system_tb/board_i/DUT/core_i/tl_mux_m1_i/clk_i
@@ -812,4 +813,4 @@ configure wave -griddelta 40
 configure wave -timeline 0
 configure wave -timelineunits ns
 update
-WaveRestoreZoom {3318092572788 fs} {3371426706696 fs}
+WaveRestoreZoom {0 fs} {53334133908 fs}

@@ -220,7 +220,7 @@ module turvo32_lsu
             {SH , 2'b11},
             {SW , 2'b01},
             {SW , 2'b10},
-            {SW , 2'b11}: misaligned_o = '1;
+            {SW , 2'b11}: misaligned_o = valid_i;
             default: misaligned_o = '0;
         endcase
     end

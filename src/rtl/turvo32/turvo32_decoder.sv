@@ -37,6 +37,9 @@ module turvo32_decoder
 
     instr_type_e instr_type;
 
+    logic instr_reg_we;
+    assign reg_we_o = instr_reg_we && rd_adr_o != '0;
+
     assign opcode = instr_i[ 6: 0];
     assign funct3 = instr_i[14:12];
     assign funct7 = instr_i[31:25];
@@ -96,11 +99,11 @@ module turvo32_decoder
         endcase
 
         unique casez (opcode)
-            7'b0000011: reg_we_o = '1; // Loads
-            7'b0?10?11: reg_we_o = '1; // Arithmetic operations, U-type instrs
-            7'b110?111: reg_we_o = '1; // JAL, JALR
-            7'b1110011: reg_we_o = funct3 != '0; // CSR
-            default: reg_we_o = '0;
+            7'b0000011: instr_reg_we = '1; // Loads
+            7'b0?10?11: instr_reg_we = '1; // Arithmetic operations, U-type instrs
+            7'b110?111: instr_reg_we = '1; // JAL, JALR
+            7'b1110011: instr_reg_we = funct3 != '0; // CSR
+            default: instr_reg_we = '0;
         endcase
 
         unique casez (opcode)

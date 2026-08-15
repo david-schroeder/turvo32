@@ -111,10 +111,11 @@ module turvo32_stage_id
                 valid_id   <= ps_valid_i;
                 passthru_o <= passthru_i;
             end
+            if (invalidate_i) valid_id <= '0;
         end
     end
 
-    assign ns_valid_o = valid_id && ps_ready_o && !invalidate_i;
+    assign ns_valid_o = valid_id && ps_ready_o;
 
     /////////////////
     //             //

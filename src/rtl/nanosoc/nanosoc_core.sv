@@ -3,7 +3,6 @@
 
 // NanoSoC -- minimal SoC for TURVo32.
 
-(* DONT_TOUCH = "true" *)
 module nanosoc_core (
     input  logic clk_i, // 100MHz clock
     input  logic rst_ni,
@@ -15,8 +14,8 @@ module nanosoc_core (
 
     `define STRINGIFY(x) `"x`"
 
-    tl_h2d_t dbus_req, ram_req;
-    tl_d2h_t dbus_rsp, ram_rsp;
+    tl_h2d_t ibus_req, dbus_req, ram_req;
+    tl_d2h_t ibus_rsp, dbus_rsp, ram_rsp;
 
     tl_h2d_t dbus_reqs [1:0];
     tl_d2h_t dbus_rsps [1:0];
@@ -27,14 +26,37 @@ module nanosoc_core (
     assign ram_reqs[1] = dbus_reqs[0];
     assign dbus_rsps[0] = ram_rsps[1];
 
+    logic [31:0] interrupts;
+    logic [31:0] cntr;
+
+    always_ff @(posedge clk_i or negedge rst_ni) begin
+        if (~rst_ni) begin
+            interrupts <= '0;
+            cntr <= 32'd999;
+        end else begin
+            if (cntr == 1) interrupts[11] <= '1;
+            else interrupts[11] <= '0;
+            if (cntr > 0) cntr <= cntr - 1;
+        end
+    end
+
     turvo32_top uproc_i (
         .clk_i,
         .rst_ni,
-        .interrupts_i('0),
-        .ibus_o      (ram_reqs[0]),
-        .ibus_i      (ram_rsps[0]),
+        .interrupts_i(interrupts),
+        .ibus_o      (ibus_req),
+        .ibus_i      (ibus_rsp),
         .dbus_o      (dbus_req),
         .dbus_i      (dbus_rsp)
+    );
+
+    tilelink_register tl_ireg_i (
+        .clk_i,
+        .rst_ni,
+        .host_i  (ibus_req),
+        .host_o  (ibus_rsp),
+        .device_o(ram_reqs[0]),
+        .device_i(ram_rsps[0])
     );
 
     nanosoc_ram #(
@@ -48,7 +70,8 @@ module nanosoc_core (
     );
 
     nanosoc_ram #(
-        .LOG_SIZE(10)
+        .LOG_SIZE(10),
+        .ADDR_BASE(22'h200000)
     ) outram_i (
         .clk_i,
         .rst_ni,

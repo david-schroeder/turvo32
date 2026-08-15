@@ -56,7 +56,7 @@ module turvo32_trap
 
     assign pending_ints = mip_i | ext_ints_i;
     assign valid_ints   = mie_i & pending_ints;
-    assign interrupt    = ~stall_i & valid_int_q & {32{mstatus_i.mie}};
+    assign interrupt    = valid_int_q & {32{mstatus_i.mie}};
 
     always_ff @(posedge clk_i or negedge rst_ni) begin
         if (~rst_ni) begin

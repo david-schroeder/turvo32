@@ -72,7 +72,7 @@ module turvo32_ftq
 	assign req_ready_o = rptr != wptr                                     // Buffer not at HWM / full
 	                  || !(entry_valid_q[rptr] || entry_pending_q[rptr]); // HWM but not full
 
-	assign rsp_valid_o   = (bus_rsp_direct ? entry_pending_q[rptr] : entry_valid_q[rptr]) && !invalidate_i;
+	assign rsp_valid_o   = (bus_rsp_direct ? entry_pending_q[rptr] : entry_valid_q[rptr]);
 	assign rsp_data_o    = bus_rsp_direct ? bus_data_i : entry_data[rptr];
 	assign rsp_error_o   = bus_rsp_direct ? bus_error_i : entry_error[rptr];
 	assign rsp_address_o = is_same_cyc_rsp ? req_address_i : entry_addrs[rptr];
@@ -108,6 +108,7 @@ module turvo32_ftq
 			if (invalidate_i) begin
 				entry_pending_q <= '0;
 				entry_valid_q <= '0;
+				rptr <= rptr;
 				wptr <= rptr;
 			end
 		end
