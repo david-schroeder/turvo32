@@ -586,12 +586,14 @@ quietly WaveActivateNextPane {} 0
 add wave -noupdate -divider Toplevel
 add wave -noupdate /system_tb/board_i/DUT/core_i/clk_i
 add wave -noupdate /system_tb/board_i/DUT/core_i/rst_ni
+add wave -noupdate /system_tb/board_i/DUT/core_i/ibus_req
+add wave -noupdate /system_tb/board_i/DUT/core_i/ibus_rsp
 add wave -noupdate /system_tb/board_i/DUT/core_i/dbus_req
 add wave -noupdate /system_tb/board_i/DUT/core_i/dbus_rsp
 add wave -noupdate /system_tb/board_i/DUT/core_i/dbus_reqs
 add wave -noupdate /system_tb/board_i/DUT/core_i/dbus_rsps
-add wave -noupdate /system_tb/board_i/DUT/core_i/ram_reqs
-add wave -noupdate /system_tb/board_i/DUT/core_i/ram_rsps
+add wave -noupdate -subitemconfig {{/system_tb/board_i/DUT/core_i/ram_reqs[0]} -expand} /system_tb/board_i/DUT/core_i/ram_reqs
+add wave -noupdate -subitemconfig {{/system_tb/board_i/DUT/core_i/ram_rsps[0]} -expand} /system_tb/board_i/DUT/core_i/ram_rsps
 add wave -noupdate /system_tb/board_i/DUT/core_i/ram_req
 add wave -noupdate /system_tb/board_i/DUT/core_i/ram_rsp
 add wave -noupdate /system_tb/board_i/DUT/core_i/io_i
@@ -649,35 +651,36 @@ add wave -noupdate -label {Committed Global Branch History} /system_tb/board_i/D
 add wave -noupdate -divider {IF Stage}
 add wave -noupdate /system_tb/board_i/DUT/core_i/uproc_i/if_stage_i/pc_d
 add wave -noupdate -radix riscv_instr /system_tb/board_i/DUT/core_i/uproc_i/if_stage_i/instr_o
-add wave -noupdate -group FTQ /system_tb/board_i/DUT/core_i/uproc_i/if_stage_i/ftq_i/bus_data_i
-add wave -noupdate -group FTQ /system_tb/board_i/DUT/core_i/uproc_i/if_stage_i/ftq_i/bus_handshake
-add wave -noupdate -group FTQ /system_tb/board_i/DUT/core_i/uproc_i/if_stage_i/ftq_i/bus_matches_rptr
-add wave -noupdate -group FTQ /system_tb/board_i/DUT/core_i/uproc_i/if_stage_i/ftq_i/bus_ready_o
-add wave -noupdate -group FTQ /system_tb/board_i/DUT/core_i/uproc_i/if_stage_i/ftq_i/bus_rsp_direct
-add wave -noupdate -group FTQ /system_tb/board_i/DUT/core_i/uproc_i/if_stage_i/ftq_i/bus_src_i
-add wave -noupdate -group FTQ /system_tb/board_i/DUT/core_i/uproc_i/if_stage_i/ftq_i/bus_src_o
-add wave -noupdate -group FTQ /system_tb/board_i/DUT/core_i/uproc_i/if_stage_i/ftq_i/bus_valid_i
-add wave -noupdate -group FTQ /system_tb/board_i/DUT/core_i/uproc_i/if_stage_i/ftq_i/clk_i
-add wave -noupdate -group FTQ /system_tb/board_i/DUT/core_i/uproc_i/if_stage_i/ftq_i/ENTRIES
-add wave -noupdate -group FTQ /system_tb/board_i/DUT/core_i/uproc_i/if_stage_i/ftq_i/entry_addrs
-add wave -noupdate -group FTQ /system_tb/board_i/DUT/core_i/uproc_i/if_stage_i/ftq_i/ENTRY_AW
-add wave -noupdate -group FTQ /system_tb/board_i/DUT/core_i/uproc_i/if_stage_i/ftq_i/entry_data
-add wave -noupdate -group FTQ /system_tb/board_i/DUT/core_i/uproc_i/if_stage_i/ftq_i/entry_pending_d
-add wave -noupdate -group FTQ /system_tb/board_i/DUT/core_i/uproc_i/if_stage_i/ftq_i/entry_pending_q
-add wave -noupdate -group FTQ /system_tb/board_i/DUT/core_i/uproc_i/if_stage_i/ftq_i/entry_valid_d
-add wave -noupdate -group FTQ /system_tb/board_i/DUT/core_i/uproc_i/if_stage_i/ftq_i/entry_valid_q
-add wave -noupdate -group FTQ /system_tb/board_i/DUT/core_i/uproc_i/if_stage_i/ftq_i/is_same_cyc_rsp
-add wave -noupdate -group FTQ /system_tb/board_i/DUT/core_i/uproc_i/if_stage_i/ftq_i/req_address_i
-add wave -noupdate -group FTQ /system_tb/board_i/DUT/core_i/uproc_i/if_stage_i/ftq_i/req_ready_o
-add wave -noupdate -group FTQ /system_tb/board_i/DUT/core_i/uproc_i/if_stage_i/ftq_i/req_valid_i
-add wave -noupdate -group FTQ /system_tb/board_i/DUT/core_i/uproc_i/if_stage_i/ftq_i/rptr
-add wave -noupdate -group FTQ /system_tb/board_i/DUT/core_i/uproc_i/if_stage_i/ftq_i/rsp_address_o
-add wave -noupdate -group FTQ /system_tb/board_i/DUT/core_i/uproc_i/if_stage_i/ftq_i/rsp_data_o
-add wave -noupdate -group FTQ /system_tb/board_i/DUT/core_i/uproc_i/if_stage_i/ftq_i/rsp_handshake
-add wave -noupdate -group FTQ /system_tb/board_i/DUT/core_i/uproc_i/if_stage_i/ftq_i/rsp_ready_i
-add wave -noupdate -group FTQ /system_tb/board_i/DUT/core_i/uproc_i/if_stage_i/ftq_i/rsp_valid_o
-add wave -noupdate -group FTQ /system_tb/board_i/DUT/core_i/uproc_i/if_stage_i/ftq_i/rst_ni
-add wave -noupdate -group FTQ /system_tb/board_i/DUT/core_i/uproc_i/if_stage_i/ftq_i/wptr
+add wave -noupdate -expand -group FTQ /system_tb/board_i/DUT/core_i/uproc_i/if_stage_i/ftq_i/invalidate_i
+add wave -noupdate -expand -group FTQ /system_tb/board_i/DUT/core_i/uproc_i/if_stage_i/ftq_i/bus_data_i
+add wave -noupdate -expand -group FTQ /system_tb/board_i/DUT/core_i/uproc_i/if_stage_i/ftq_i/bus_handshake
+add wave -noupdate -expand -group FTQ /system_tb/board_i/DUT/core_i/uproc_i/if_stage_i/ftq_i/bus_matches_rptr
+add wave -noupdate -expand -group FTQ /system_tb/board_i/DUT/core_i/uproc_i/if_stage_i/ftq_i/bus_ready_o
+add wave -noupdate -expand -group FTQ /system_tb/board_i/DUT/core_i/uproc_i/if_stage_i/ftq_i/bus_rsp_direct
+add wave -noupdate -expand -group FTQ /system_tb/board_i/DUT/core_i/uproc_i/if_stage_i/ftq_i/bus_src_i
+add wave -noupdate -expand -group FTQ /system_tb/board_i/DUT/core_i/uproc_i/if_stage_i/ftq_i/bus_src_o
+add wave -noupdate -expand -group FTQ /system_tb/board_i/DUT/core_i/uproc_i/if_stage_i/ftq_i/bus_valid_i
+add wave -noupdate -expand -group FTQ /system_tb/board_i/DUT/core_i/uproc_i/if_stage_i/ftq_i/clk_i
+add wave -noupdate -expand -group FTQ /system_tb/board_i/DUT/core_i/uproc_i/if_stage_i/ftq_i/ENTRIES
+add wave -noupdate -expand -group FTQ /system_tb/board_i/DUT/core_i/uproc_i/if_stage_i/ftq_i/entry_addrs
+add wave -noupdate -expand -group FTQ /system_tb/board_i/DUT/core_i/uproc_i/if_stage_i/ftq_i/ENTRY_AW
+add wave -noupdate -expand -group FTQ /system_tb/board_i/DUT/core_i/uproc_i/if_stage_i/ftq_i/entry_data
+add wave -noupdate -expand -group FTQ /system_tb/board_i/DUT/core_i/uproc_i/if_stage_i/ftq_i/entry_pending_d
+add wave -noupdate -expand -group FTQ -expand /system_tb/board_i/DUT/core_i/uproc_i/if_stage_i/ftq_i/entry_pending_q
+add wave -noupdate -expand -group FTQ /system_tb/board_i/DUT/core_i/uproc_i/if_stage_i/ftq_i/entry_valid_d
+add wave -noupdate -expand -group FTQ /system_tb/board_i/DUT/core_i/uproc_i/if_stage_i/ftq_i/entry_valid_q
+add wave -noupdate -expand -group FTQ /system_tb/board_i/DUT/core_i/uproc_i/if_stage_i/ftq_i/is_same_cyc_rsp
+add wave -noupdate -expand -group FTQ /system_tb/board_i/DUT/core_i/uproc_i/if_stage_i/ftq_i/req_address_i
+add wave -noupdate -expand -group FTQ /system_tb/board_i/DUT/core_i/uproc_i/if_stage_i/ftq_i/req_ready_o
+add wave -noupdate -expand -group FTQ /system_tb/board_i/DUT/core_i/uproc_i/if_stage_i/ftq_i/req_valid_i
+add wave -noupdate -expand -group FTQ /system_tb/board_i/DUT/core_i/uproc_i/if_stage_i/ftq_i/rptr
+add wave -noupdate -expand -group FTQ /system_tb/board_i/DUT/core_i/uproc_i/if_stage_i/ftq_i/rsp_address_o
+add wave -noupdate -expand -group FTQ -radix riscv_instr /system_tb/board_i/DUT/core_i/uproc_i/if_stage_i/ftq_i/rsp_data_o
+add wave -noupdate -expand -group FTQ /system_tb/board_i/DUT/core_i/uproc_i/if_stage_i/ftq_i/rsp_handshake
+add wave -noupdate -expand -group FTQ /system_tb/board_i/DUT/core_i/uproc_i/if_stage_i/ftq_i/rsp_ready_i
+add wave -noupdate -expand -group FTQ /system_tb/board_i/DUT/core_i/uproc_i/if_stage_i/ftq_i/rsp_valid_o
+add wave -noupdate -expand -group FTQ /system_tb/board_i/DUT/core_i/uproc_i/if_stage_i/ftq_i/rst_ni
+add wave -noupdate -expand -group FTQ /system_tb/board_i/DUT/core_i/uproc_i/if_stage_i/ftq_i/wptr
 add wave -noupdate -group BTB /system_tb/board_i/DUT/core_i/uproc_i/if_stage_i/btb_i/clk_i
 add wave -noupdate -group BTB /system_tb/board_i/DUT/core_i/uproc_i/if_stage_i/btb_i/dest_rdata
 add wave -noupdate -group BTB /system_tb/board_i/DUT/core_i/uproc_i/if_stage_i/btb_i/do_jump_o
@@ -797,7 +800,7 @@ add wave -noupdate -expand -group {Regfile Writeback} /system_tb/board_i/DUT/cor
 add wave -noupdate -expand -group {Regfile Writeback} /system_tb/board_i/DUT/core_i/uproc_i/wb_stage_i/reg_we_o
 add wave -noupdate -expand -group {Regfile Writeback} /system_tb/board_i/DUT/core_i/uproc_i/wb_stage_i/reg_wdata_o
 TreeUpdate [SetDefaultTree]
-WaveRestoreCursors {{Cursor 1} {3332499337473 fs} 0}
+WaveRestoreCursors {{Cursor 1} {585540145 fs} 0}
 quietly wave cursor active 1
 configure wave -namecolwidth 413
 configure wave -valuecolwidth 100
@@ -813,4 +816,4 @@ configure wave -griddelta 40
 configure wave -timeline 0
 configure wave -timelineunits ns
 update
-WaveRestoreZoom {0 fs} {53334133908 fs}
+WaveRestoreZoom {551266107 fs} {635434652 fs}

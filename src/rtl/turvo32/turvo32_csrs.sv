@@ -59,9 +59,9 @@ module turvo32_csrs
     logic [31:0] csr_wdata;
     always_comb begin
         unique case (op_i)
-            CSRRW: csr_wdata = operand_i;
             CSRRS: csr_wdata = rdata_o | operand_i;
             CSRRC: csr_wdata = rdata_o & (~operand_i);
+            default: csr_wdata = operand_i;
         endcase
     end
 
