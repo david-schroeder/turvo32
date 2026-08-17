@@ -6,8 +6,8 @@
 module nanosoc_core (
     input  logic clk_i, // 100MHz clock
     input  logic rst_ni,
-    input  top_pkg::board2fpga_t io_i,
-    output top_pkg::fpga2board_t io_o
+    input  logic [1:0] switch_i,
+    output logic [7:0] led_o,
 );
 
     import tilelink_pkg::*;
@@ -101,12 +101,11 @@ module nanosoc_core (
     );
 
     always_comb begin
-        io_o = '{default: '0};
-        unique case (io_i.switch[1:0])
-            2'b00: io_o.led = dbus_req.a_address[ 7: 0];
-            2'b01: io_o.led = dbus_req.a_address[15: 8];
-            2'b10: io_o.led = dbus_req.a_address[23:16];
-            2'b11: io_o.led = dbus_req.a_address[31:24];
+        unique case (switch_i)
+            2'b00: led_o = dbus_req.a_address[ 7: 0];
+            2'b01: led_o = dbus_req.a_address[15: 8];
+            2'b10: led_o = dbus_req.a_address[23:16];
+            2'b11: led_o = dbus_req.a_address[31:24];
         endcase
     end
 

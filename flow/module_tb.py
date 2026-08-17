@@ -48,13 +48,13 @@ class ModuleTb(Block):
     # QuestaSim tasks
     # ---------------
 
-    @task(requires={'srcs':'srcs.srcs', 'unisims':'simlibs_questa.unisims'})
+    @task(requires={'srcs':'srcs.srcs_fpga', 'unisims':'simlibs_questa.unisims'})
     def sim_rtl_questa(self, cwd, srcs, unisims):
         """RTL simulation with QuestaSim"""
         self.simulate('questasim', cwd, srcs,
             libs=[unisims.lib])
 
-    @task(requires={'srcs':'srcs.srcs', 'unisims':'simlibs_questa.unisims'}, hidden=True)
+    @task(requires={'srcs':'srcs.srcs_fpga', 'unisims':'simlibs_questa.unisims'}, hidden=True)
     def sim_rtl_questa_batch(self, cwd, srcs, unisims):
         """RTL simulation with QuestaSim (batch mode)"""
         self.simulate('questasim', cwd, srcs,
@@ -64,7 +64,7 @@ class ModuleTb(Block):
     # Vivado XSim tasks
     # -----------------
 
-    @task(requires={'srcs':'srcs.srcs'})
+    @task(requires={'srcs':'srcs.srcs_fpga'})
     def sim_rtl_xsim(self, cwd, srcs):
         """RTL simulation with XSim"""
         self.simulate('xsim', cwd, srcs,

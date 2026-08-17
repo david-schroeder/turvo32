@@ -4,6 +4,7 @@
 from pydesignflow import Flow
 
 from .fpga_top import FpgaTop
+from .asic_top import AsicTop
 from .system_tb import SystemTb
 from .sw import Program, Libsys
 from .simlibs_questa import SimlibsQuesta
@@ -35,7 +36,7 @@ flow['srcs'] = Sources(dependency_map={
 })
 
 flow['fpga_top'] = FpgaTop(dependency_map={'srcs':'srcs'})
-
+flow['asic_top'] = AsicTop(dependency_map={'srcs':'srcs'})
 
 # Testbenches
 # -----------

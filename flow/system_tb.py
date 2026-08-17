@@ -62,7 +62,7 @@ class SystemTb(Block):
     # ---------------
 
     @task(requires={
-        'srcs':'srcs.srcs',
+        'srcs':'srcs.srcs_fpga',
         'unisims':'simlibs_questa.unisims',
         })
     def sim_rtl_questa(self, cwd, srcs, unisims):
@@ -70,7 +70,7 @@ class SystemTb(Block):
         self.simulate('questasim', cwd, srcs, libs=[unisims.lib])
 
     @task(requires={
-        'srcs':'srcs.srcs',
+        'srcs':'srcs.srcs_fpga',
         'unisims':'simlibs_questa.unisims',
         }, hidden=True)
     def sim_rtl_questa_batch(self, cwd, srcs, unisims):
@@ -78,7 +78,7 @@ class SystemTb(Block):
         self.simulate('questasim', cwd, srcs, libs=[unisims.lib], batch=True)
 
     @task(requires={
-        'srcs':'srcs.srcs',
+        'srcs':'srcs.srcs_fpga',
         'unisims':'simlibs_questa.unisims',
         'secureip':'simlibs_questa.secureip',
         'syn':'fpga_top.syn',
@@ -91,7 +91,7 @@ class SystemTb(Block):
             netlist=syn.verilog_funcsim)
 
     @task(requires={
-        'srcs':'srcs.srcs',
+        'srcs':'srcs.srcs_fpga',
         'simprims':'simlibs_questa.simprims',
         'secureip':'simlibs_questa.secureip',
         'pnr':'fpga_top.pnr',
@@ -107,14 +107,14 @@ class SystemTb(Block):
     # -----------------
 
     @task(requires={
-        'srcs':'srcs.srcs',
+        'srcs':'srcs.srcs_fpga',
         })
     def sim_rtl_xsim(self, cwd, srcs):
         """RTL simulation with XSim"""
         self.simulate('xsim', cwd, srcs, libs=['unisims_ver', 'secureip']) # Xilinx XSim has this as builtin library. 
 
     @task(requires={
-        'srcs':'srcs.srcs',
+        'srcs':'srcs.srcs_fpga',
         'syn':'fpga_top.syn',
         })
     def sim_synfunc_xsim(self, cwd, srcs, syn):
@@ -124,7 +124,7 @@ class SystemTb(Block):
             netlist=syn.verilog_funcsim)
 
     @task(requires={
-        'srcs':'srcs.srcs',
+        'srcs':'srcs.srcs_fpga',
         'pnr':'fpga_top.pnr',
         })
     def sim_pnrtime_xsim(self, cwd, srcs, pnr):

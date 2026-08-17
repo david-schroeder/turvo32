@@ -24,7 +24,7 @@ class FpgaTop(Block):
             self.design_dir / "xdc" / "fpga_top.xdc",
         ]
 
-    @task(requires={'srcs':'srcs.srcs'}, hidden=True)
+    @task(requires={'srcs':'srcs.srcs_fpga'}, hidden=True)
     def rtl_elaborate(self, cwd, srcs):
         """RTL elaboration in Vivado"""
         with Vivado(cwd=cwd, interact=True) as t:
@@ -75,7 +75,7 @@ class FpgaTop(Block):
         t.report_methodology(file=r.report_methodology)
         t.report_drc(file=r.report_drc)
 
-    @task(requires={'srcs':'srcs.srcs',})
+    @task(requires={'srcs':'srcs.srcs_fpga',})
     def syn(self, cwd, srcs):
         """Synthesize FPGA netlist from RTL sources"""
 
