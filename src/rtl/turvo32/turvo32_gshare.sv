@@ -42,7 +42,7 @@ module turvo32_gshare
 
 	// TODO: adjust for IALIGN=16 when RVC support is added
 	assign branch_addr = pc_d_i[2+:N];
-	assign lp_rdaddr = ghr ^ branch_addr;
+	assign lp_rdaddr = (ghr_we_i ? ghr_wd_i : ghr) ^ branch_addr;
 
 
 	/* Predictor (LP) table */
@@ -87,24 +87,16 @@ module turvo32_gshare
 	/* GHR update logic */
 
 	logic [N-1:0] ghr_q;
-	logic [N-1:0] speculative_ghr;
 
-	assign speculative_ghr = {ghr_q[N-2:0], pred_o};
+	assign ghr = {ghr_q[N-2:0], pred_o};
 
 	always_ff @(posedge clk_i or negedge rst_ni) begin
 		if (~rst_ni) begin
 			ghr_q <= '0;
 		end else begin
-			if (btb_hit_i || ghr_we_i) begin
-				ghr_q <= ghr;
-			end
+			if (is_branch_i) ghr_q <= ghr;
+			if (ghr_we_i) ghr_q <= ghr_wd_i;
 		end
-	end
-
-	always_comb begin
-		ghr = ghr_q;
-		if (is_branch_i) ghr = speculative_ghr;
-		if (ghr_we_i) ghr = ghr_wd_i;
 	end
 
 endmodule
