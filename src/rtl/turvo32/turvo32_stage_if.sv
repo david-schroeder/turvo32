@@ -61,6 +61,7 @@ module turvo32_stage_if
     logic [31:0] pc_d, pc_if;
     logic [31:0] pc_seq;
     logic        is_first_cycle;
+    logic        update_pc;
 
     // FTQ
     logic        ftq_ready;
@@ -92,7 +93,7 @@ module turvo32_stage_if
             pc_if          <= BOOT_ADDR;
             is_first_cycle <= '1;
         end else begin
-            if (ftq_ready && (!ibus_o.a_valid || ibus_i.a_ready) || do_jump_i) begin
+            if (update_pc) begin
                 pc_if          <= pc_d;
                 is_first_cycle <= '0;
             end
@@ -109,9 +110,12 @@ module turvo32_stage_if
 
     assign pc_seq = pc_if + 4;
 
+    assign update_pc = ftq_ready && (!ibus_o.a_valid || ibus_i.a_ready) || do_jump_i;
+
     always_comb begin
         priority case (1'b1)
             is_first_cycle : pc_d = BOOT_ADDR; // First cycle after boot
+            !update_pc     : pc_d = pc_if;
             do_jump_i      : pc_d = jump_tgt_i;
             btb_says_jump  : pc_d = btb_pred_addr;
             default        : pc_d = pc_seq;

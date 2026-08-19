@@ -58,7 +58,7 @@ module turvo32_gshare
 		if (~rst_ni) begin
 			lp_addr_o <= '0;
 		end else begin
-			lp_addr_o  <= lp_rdaddr;
+			lp_addr_o <= lp_rdaddr;
 		end
 	end
 

@@ -43,6 +43,7 @@ module turvo32_ftq
 
 	logic [ENTRIES-1:0] entry_pending_d, entry_pending_q;
 	logic [ENTRIES-1:0] entry_valid_d,   entry_valid_q;
+	logic [ENTRIES-1:0] entry_stale_q;
 	logic [ENTRIES-1:0] accept_data_writes;
 
 	logic [ENTRY_AW-1:0] rptr;
@@ -88,7 +89,7 @@ module turvo32_ftq
 		if (req_valid_i) entry_pending_d[wptr] = '1;
 		if (bus_handshake && entry_pending_d[bus_src_i]) begin
 			entry_pending_d[bus_src_i] = '0;
-			entry_valid_d[bus_src_i] = '1;
+			entry_valid_d[bus_src_i] = !entry_stale_q[bus_src_i];
 			accept_data_writes[bus_src_i] = '1;
 		end
 		if (rsp_handshake) entry_valid_d[rptr] = '0;
@@ -100,16 +101,19 @@ module turvo32_ftq
 			wptr            <= '0;
 			entry_pending_q <= '0;
 			entry_valid_q   <= '0;
+			entry_stale_q   <= '0;
 		end else begin
 			entry_pending_q <= entry_pending_d;
 			entry_valid_q   <= entry_valid_d;
 			if (rsp_handshake) rptr <= rptr + 1;
 			if (req_valid_i) wptr <= wptr + 1;
+			if (bus_handshake) entry_stale_q[bus_src_i] <= '0;
 			if (invalidate_i) begin
-				entry_pending_q <= '0;
+				// Every now-outstanding request is stale
+				entry_stale_q <= entry_pending_d;
 				entry_valid_q <= '0;
-				rptr <= rptr;
-				wptr <= rptr;
+				rptr <= wptr;
+				wptr <= wptr;
 			end
 		end
 	end
