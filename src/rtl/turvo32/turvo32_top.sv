@@ -155,7 +155,10 @@ module turvo32_top
     turvo32_stage_if #(
         .BOOT_ADDR     (BOOT_ADDR),
         .DEBUG_ADDR    (DEBUG_ADDR),
-        .DEBUG_EXC_ADDR(DEBUG_EXC_ADDR)
+        .DEBUG_EXC_ADDR(DEBUG_EXC_ADDR),
+        .BTB_SETS      (BTB_SETS),
+        .BTB_WAYS      (BTB_WAYS),
+        .BP_N          (BP_N)
     ) if_stage_i (
         .clk_i,
         .rst_ni,

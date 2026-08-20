@@ -36,13 +36,13 @@ module turvo32_gshare
 	/* Addressing */
 
 	// N-bit Global History Register
-	logic [N-1:0] ghr;
+	logic [N-1:0] ghr, ghr_q;
 	logic [N-1:0] branch_addr;
 	logic [N-1:0] lp_rdaddr;
 
 	// TODO: adjust for IALIGN=16 when RVC support is added
 	assign branch_addr = pc_d_i[2+:N];
-	assign lp_rdaddr = (ghr_we_i ? ghr_wd_i : ghr) ^ branch_addr;
+	assign lp_rdaddr = (ghr_we_i ? ghr_wd_i : ghr_q) ^ branch_addr;
 
 
 	/* Predictor (LP) table */
@@ -85,8 +85,6 @@ module turvo32_gshare
 
 
 	/* GHR update logic */
-
-	logic [N-1:0] ghr_q;
 
 	assign ghr = {ghr_q[N-2:0], pred_o};
 
