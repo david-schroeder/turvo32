@@ -9,6 +9,7 @@ module prim_sram_sdp #(
     parameter  int DEPTH = 256,
     localparam int AW = $clog2(DEPTH)
 ) (
+    inout  MODPORT_POWER_PINS,
     input  logic             clk_i,
     input  logic             rst_ni,
     input  logic [   AW-1:0] waddr_i,
@@ -86,13 +87,10 @@ module prim_sram_sdp #(
                 if (WIDTH > 16) begin : gen_32w
                     for (genvar i = 0; i < (WIDTH + 31) / 32; i++) begin : gen_tiles
                         RM_IHPSG13_2P_1024x32_c2_bm_bist block_i (
-                            `ifdef USE_POWER_PINS
-                            .VDD(vdd),
-                            .VSS(vss),
-                            `endif
+                            .POWER_PIN_GUARD(),
                             .A_CLK      (clk_i),
                             .A_DIN      (wdata[32*i+:32]),
-                            .A_BM       ('1),
+                            .A_BM       ({32{1'b1}}),
                             .A_ADDR     (waddr),
                             .A_MEN      ('1),
                             .A_REN      ('0),
@@ -130,13 +128,10 @@ module prim_sram_sdp #(
 
                 else begin : gen_16w
                     RM_IHPSG13_2P_1024x16_c2_bm_bist block_i (
-                        `ifdef USE_POWER_PINS
-                        .VDD(vdd),
-                        .VSS(vss),
-                        `endif
+                        .POWER_PIN_GUARD(),
                         .A_CLK      (clk_i),
                         .A_DIN      (wdata[15:0]),
-                        .A_BM       ('1),
+                        .A_BM       ({16{1'b1}}),
                         .A_ADDR     (waddr),
                         .A_MEN      ('1),
                         .A_REN      ('0),
@@ -167,7 +162,7 @@ module prim_sram_sdp #(
                         .B_BIST_CLK ('0),
                         .B_BIST_EN  ('0),
                         .B_DLY      ('1),
-                        .B_DOUT     (rdata_rows[i][15:0])
+                        .B_DOUT     (rdata_rows[row][15:0])
                     );
                 end : gen_16w
             end : gen_rows
@@ -180,13 +175,10 @@ module prim_sram_sdp #(
             if (WIDTH > 16) begin : gen_32w
                 for (genvar i = 0; i < (WIDTH + 31) / 32; i++) begin : gen_tiles
                     RM_IHPSG13_2P_512x32_c2_bm_bist block_i (
-                        `ifdef USE_POWER_PINS
-                        .VDD(vdd),
-                        .VSS(vss),
-                        `endif
+                        .POWER_PIN_GUARD(),
                         .A_CLK      (clk_i),
                         .A_DIN      (wdata[32*i+:32]),
-                        .A_BM       ('1),
+                        .A_BM       ({32{1'b1}}),
                         .A_ADDR     (waddr),
                         .A_MEN      ('1),
                         .A_REN      ('0),
@@ -224,13 +216,10 @@ module prim_sram_sdp #(
 
             else if (WIDTH > 8) begin : gen_16w
                 RM_IHPSG13_2P_512x16_c2_bm_bist block_i (
-                    `ifdef USE_POWER_PINS
-                    .VDD(vdd),
-                    .VSS(vss),
-                    `endif
+                    .POWER_PIN_GUARD(),
                     .A_CLK      (clk_i),
                     .A_DIN      (wdata[15:0]),
-                    .A_BM       ('1),
+                    .A_BM       ({16{1'b1}}),
                     .A_ADDR     (waddr),
                     .A_MEN      ('1),
                     .A_REN      ('0),
@@ -267,13 +256,10 @@ module prim_sram_sdp #(
 
             else begin : gen_8w
                 RM_IHPSG13_2P_512x8_c2_bm_bist block_i (
-                    `ifdef USE_POWER_PINS
-                    .VDD(vdd),
-                    .VSS(vss),
-                    `endif
+                    .POWER_PIN_GUARD(),
                     .A_CLK      (clk_i),
                     .A_DIN      (wdata[7:0]),
-                    .A_BM       ('1),
+                    .A_BM       ({8{1'b1}}),
                     .A_ADDR     (waddr),
                     .A_MEN      ('1),
                     .A_REN      ('0),
@@ -316,13 +302,10 @@ module prim_sram_sdp #(
             if (WIDTH > 16) begin : gen_32w
                 for (genvar i = 0; i < (WIDTH + 31) / 32; i++) begin : gen_tiles
                     RM_IHPSG13_2P_256x32_c2_bm_bist block_i (
-                        `ifdef USE_POWER_PINS
-                        .VDD(vdd),
-                        .VSS(vss),
-                        `endif
+                        .POWER_PIN_GUARD(),
                         .A_CLK      (clk_i),
                         .A_DIN      (wdata[32*i+:32]),
-                        .A_BM       ('1),
+                        .A_BM       ({32{1'b1}}),
                         .A_ADDR     (waddr),
                         .A_MEN      ('1),
                         .A_REN      ('0),
@@ -360,13 +343,10 @@ module prim_sram_sdp #(
 
             else if (WIDTH > 8) begin : gen_16w
                 RM_IHPSG13_2P_256x16_c2_bm_bist block_i (
-                    `ifdef USE_POWER_PINS
-                    .VDD(vdd),
-                    .VSS(vss),
-                    `endif
+                    .POWER_PIN_GUARD(),
                     .A_CLK      (clk_i),
                     .A_DIN      (wdata[15:0]),
-                    .A_BM       ('1),
+                    .A_BM       ({16{1'b1}}),
                     .A_ADDR     (waddr),
                     .A_MEN      ('1),
                     .A_REN      ('0),
@@ -403,13 +383,10 @@ module prim_sram_sdp #(
 
             else begin : gen_8w
                 RM_IHPSG13_2P_256x8_c2_bm_bist block_i (
-                    `ifdef USE_POWER_PINS
-                    .VDD(vdd),
-                    .VSS(vss),
-                    `endif
+                    .POWER_PIN_GUARD(),
                     .A_CLK      (clk_i),
                     .A_DIN      (wdata[7:0]),
-                    .A_BM       ('1),
+                    .A_BM       ({8{1'b1}}),
                     .A_ADDR     (waddr),
                     .A_MEN      ('1),
                     .A_REN      ('0),
@@ -451,6 +428,7 @@ module prim_sram_sdp #(
 
             for (genvar i = 0; i < (WIDTH + 31) / 32; i++) begin : gen_tiles
                 RM_IHPSG13_2P_64x32_c2 block_i (
+                    .POWER_PIN_GUARD(),
                     .A_CLK      (clk_i),
                     .A_DIN      (wdata[32*i+:32]),
                     .A_ADDR     (waddr),
