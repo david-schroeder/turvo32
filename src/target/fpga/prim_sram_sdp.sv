@@ -9,6 +9,7 @@ module prim_sram_sdp #(
     localparam int AW = $clog2(DEPTH)
 ) (
     input  logic             clk_i,
+    input  logic             rst_ni,
     input  logic [   AW-1:0] waddr_i,
     input  logic             wen_i,
     input  logic [WIDTH-1:0] wdata_i,

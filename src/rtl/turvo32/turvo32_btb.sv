@@ -80,6 +80,7 @@ module turvo32_btb
 				.DEPTH(SETS)
 			) way_i (
 				.clk_i,
+				.rst_ni,
 				.waddr_i(w_pc_idx),
 				.wen_i  (we_i && w_way_i == i),
 				.wdata_i({

@@ -20,31 +20,31 @@ module prim_sram_1p_bwwe #(
     output logic [WIDTH-1:0] rdata_o
 );
 
-// IHP130-SG13G2 has the following bitmasked single-port macros available:
-// - RM_IHPSG13_1P_64x64_c2_bm_bist
-// - RM_IHPSG13_1P_256x8_c3_bm_bist
-// - RM_IHPSG13_1P_256x16_c2_bm_bist
-// - RM_IHPSG13_1P_256x32_c2_bm_bist
-// - RM_IHPSG13_1P_256x48_c2_bm_bist
-// - RM_IHPSG13_1P_256x64_c2_bm_bist
-// - RM_IHPSG13_1P_512x8_c3_bm_bist
-// - RM_IHPSG13_1P_512x16_c2_bm_bist
-// - RM_IHPSG13_1P_512x32_c2_bm_bist
-// - RM_IHPSG13_1P_512x64_c2_bm_bist
-// - RM_IHPSG13_1P_1024x8_c2_bm_bist
-// - RM_IHPSG13_1P_1024x16_c2_bm_bist
-// - RM_IHPSG13_1P_1024x32_c2_bm_bist
-// - RM_IHPSG13_1P_1024x64_c2_bm_bist
-// - RM_IHPSG13_1P_2048x32_c2_bm_bist
-// - RM_IHPSG13_1P_2048x64_c2_bm_bist
-// - RM_IHPSG13_1P_4096x8_c3_bm_bist
-// - RM_IHPSG13_1P_4096x16_c3_bm_bist
+    // IHP130-SG13G2 has the following bitmasked single-port macros available:
+    // - RM_IHPSG13_1P_64x64_c2_bm_bist
+    // - RM_IHPSG13_1P_256x8_c3_bm_bist
+    // - RM_IHPSG13_1P_256x16_c2_bm_bist
+    // - RM_IHPSG13_1P_256x32_c2_bm_bist
+    // - RM_IHPSG13_1P_256x48_c2_bm_bist
+    // - RM_IHPSG13_1P_256x64_c2_bm_bist
+    // - RM_IHPSG13_1P_512x8_c3_bm_bist
+    // - RM_IHPSG13_1P_512x16_c2_bm_bist
+    // - RM_IHPSG13_1P_512x32_c2_bm_bist
+    // - RM_IHPSG13_1P_512x64_c2_bm_bist
+    // - RM_IHPSG13_1P_1024x8_c2_bm_bist
+    // - RM_IHPSG13_1P_1024x16_c2_bm_bist
+    // - RM_IHPSG13_1P_1024x32_c2_bm_bist
+    // - RM_IHPSG13_1P_1024x64_c2_bm_bist
+    // - RM_IHPSG13_1P_2048x32_c2_bm_bist
+    // - RM_IHPSG13_1P_2048x64_c2_bm_bist
+    // - RM_IHPSG13_1P_4096x8_c3_bm_bist
+    // - RM_IHPSG13_1P_4096x16_c3_bm_bist
 
-// The implementation strategy of this module is:
-// - select the smallest macro set with a depth > requested
-// - if requested depth > deepest macro depth, it is tiled appropriately
-// - select the smallest macro of that set with width > requested
-// - if requested width > widest macro width, it is tiled appropriately
+    // The implementation strategy of this module is:
+    // - select the smallest macro set with a depth > requested
+    // - if requested depth > deepest macro depth, it is tiled appropriately
+    // - select the smallest macro of that set with width > requested
+    // - if requested width > widest macro width, it is tiled appropriately
 
     //////////////////////////////////////
     //                                  //
