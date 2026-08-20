@@ -36,22 +36,25 @@ module nanosoc_ram
 
     assign stall = tl_o.d_valid & ~tl_i.d_ready;
 
-    generate
-        for (genvar i = 0; i < 4; i++) begin : gen_byte_lanes
-            prim_sram_1p #(
-                .WIDTH(8),
-                .DEPTH(2**(LOG_SIZE-2))
-            ) byte_lane_i (
-                .clk_i,
-                .rst_ni,
-                .addr_i (addr),
-                .wen_i  (wen && wmask[i]),
-                .ren_i  (~stall),
-                .wdata_i(wdata[8*i+:8]),
-                .rdata_o(rdata[8*i+:8])
-            );
-        end : gen_byte_lanes
-    endgenerate
+    prim_sram_1p_bwwe #(
+        .WIDTH(32),
+        .DEPTH(2**(LOG_SIZE-2))
+    ) mem_i (
+        .clk_i,
+        .rst_ni,
+        .addr_i (addr),
+        .wen_i  (wen),
+        .wmask_i(wmask),
+        .ren_i  (~stall),
+        .wdata_i(wdata),
+        .rdata_o(rdata)
+    );
+
+    `ifdef FPGA
+    initial if (MEMFILE != "") begin
+        $readmemh(MEMFILE, mem_i.mem);
+    end
+    `endif
 
     always_comb begin
         if (tl_i.a_opcode inside {Get, PutFullData}) begin
@@ -107,7 +110,5 @@ module nanosoc_ram
         d_source: source_q,
         a_ready: ~stall
     };
-
-    // TODO: add back memfile initialization for fpga
 
 endmodule
