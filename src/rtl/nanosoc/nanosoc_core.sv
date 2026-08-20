@@ -7,7 +7,7 @@ module nanosoc_core (
     input  logic clk_i, // 100MHz clock
     input  logic rst_ni,
     input  logic [1:0] switch_i,
-    output logic [7:0] led_o,
+    output logic [7:0] led_o
 );
 
     import tilelink_pkg::*;
@@ -40,7 +40,11 @@ module nanosoc_core (
         end
     end
 
-    turvo32_top uproc_i (
+    turvo32_top #(
+        .BTB_SETS(64),
+        .BTB_WAYS(4),
+        .BP_N(8)
+    ) uproc_i (
         .clk_i,
         .rst_ni,
         .interrupts_i(interrupts),

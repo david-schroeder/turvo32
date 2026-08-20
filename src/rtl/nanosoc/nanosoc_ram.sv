@@ -15,8 +15,6 @@ module nanosoc_ram
     output tl_d2h_t tl_o
 );
 
-    reg [31:0] mem [2**(LOG_SIZE-2)-1:0];
-
     logic [LOG_SIZE-3:0] addr;
     logic [        31:0] wdata;
     logic                wen;
@@ -38,15 +36,22 @@ module nanosoc_ram
 
     assign stall = tl_o.d_valid & ~tl_i.d_ready;
 
-    always_ff @(posedge clk_i) begin
-        if (wen) begin
-            if (wmask[0]) mem[addr][ 7: 0] <= wdata[ 7: 0];
-            if (wmask[1]) mem[addr][15: 8] <= wdata[15: 8];
-            if (wmask[2]) mem[addr][23:16] <= wdata[23:16];
-            if (wmask[3]) mem[addr][31:24] <= wdata[31:24];
-        end
-        if (~stall) rdata <= mem[addr];
-    end
+    generate
+        for (genvar i = 0; i < 4; i++) begin : gen_byte_lanes
+            prim_sram_1p #(
+                .WIDTH(8),
+                .DEPTH(2**(LOG_SIZE-2))
+            ) byte_lane_i (
+                .clk_i,
+                .rst_ni,
+                .addr_i (addr),
+                .wen_i  (wen && wmask[i]),
+                .ren_i  (~stall),
+                .wdata_i(wdata[8*i+:8]),
+                .rdata_o(rdata[8*i+:8])
+            );
+        end : gen_byte_lanes
+    endgenerate
 
     always_comb begin
         if (tl_i.a_opcode inside {Get, PutFullData}) begin
@@ -103,9 +108,6 @@ module nanosoc_ram
         a_ready: ~stall
     };
 
-    initial begin
-        if (MEMFILE != "") $readmemh(MEMFILE, mem);
-        else mem <= '{default: '0};
-    end
+    // TODO: add back memfile initialization for fpga
 
 endmodule

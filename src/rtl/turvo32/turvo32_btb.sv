@@ -41,7 +41,6 @@ module turvo32_btb
 
 	localparam IDX_W = $clog2(SETS);
 	localparam TAG_W = 30 - IDX_W; // Bit 0 is never stored
-	localparam LINE_W = TAG_W + 30 + 2; // 31: dest, 2: flags (conditional, valid)
 
 	logic [WAYID_W-1:0] hit_way_id, lru_way_id;
 	logic               is_hit;
@@ -71,25 +70,33 @@ module turvo32_btb
 
 	logic [ TAG_W-1:0] tag_rdata   [WAYS-1:0];
 	logic [      29:0] dest_rdata  [WAYS-1:0];
-	logic [       1:0] flag_rdata  [WAYS-1:0];
 	logic              valid_rdata [WAYS-1:0];
 	logic              cond_rdata  [WAYS-1:0];
 
 	generate
 		for (genvar i = 0; i < WAYS; i++) begin : gen_ways
-			(* ram_style = "block" *)
-			logic [LINE_W-1:0] lines [SETS-1:0];
-
-			initial lines = '{default: '0};
-
-			assign {cond_rdata[i], valid_rdata[i]} = flag_rdata[i];
-
-			always_ff @(posedge clk_i) begin
-				if (we_i && w_way_i == i) begin
-					lines[w_pc_idx] <= {w_pc_i[31-:TAG_W], w_tgt_i[31:2], w_is_cond_i, 1'b1};
-				end
-				{tag_rdata[i], dest_rdata[i], flag_rdata[i]} <= lines[pc_d_idx];
-			end
+			prim_sram_sdp #(
+				.WIDTH(64),
+				.DEPTH(SETS)
+			) way_i (
+				.clk_i,
+				.waddr_i(w_pc_idx),
+				.wen_i  (we_i && w_way_i == i),
+				.wdata_i({
+					w_pc_i[31-:TAG_W],
+					w_tgt_i[31:2],
+					w_is_cond_i,
+					1'b1
+				}),
+				.raddr_i(pc_d_idx),
+				.ren_i  ('1),
+				.rdata_o({
+					tag_rdata[i],
+					dest_rdata[i],
+					cond_rdata[i],
+					valid_rdata[i]
+				})
+			);
 		end : gen_ways
 	endgenerate
 

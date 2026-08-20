@@ -49,7 +49,7 @@ class Sources(Block):
 
         r.design_srcs = design_srcs_pkg + design_srcs
 
-        r.defines = srcs_rtl.defines
+        r.defines = srcs_rtl.defines | {"FPGA": 1}
         r.include_dirs = srcs_rtl.include_dirs
         r.tb_srcs = [x for x in self.src_dir.glob("tb/*.sv")]
         r.tb_srcs += [vivado.vivado_dir() / "data/verilog/src/glbl.v"]
