@@ -85,18 +85,28 @@ module turvo32_btb
 				.wdata_i({
 					w_pc_i[31-:TAG_W],
 					w_tgt_i[31:2],
-					w_is_cond_i,
-					1'b1
+					w_is_cond_i
 				}),
 				.raddr_i(pc_d_idx),
 				.ren_i  ('1),
 				.rdata_o({
 					tag_rdata[i],
 					dest_rdata[i],
-					cond_rdata[i],
-					valid_rdata[i]
+					cond_rdata[i]
 				})
 			);
+
+			logic [SETS-1:0] valid;
+
+			always_ff @(posedge clk_i or negedge rst_ni) begin
+				if (~rst_ni) begin
+					valid_rdata[i] <= '0;
+					valid <= '0;
+				end else begin
+					if (we_i && w_way_i == i) valid[w_pc_idx] <= '1;
+					valid_rdata[i] <= valid[pc_d_idx];
+				end
+			end
 		end : gen_ways
 	endgenerate
 
