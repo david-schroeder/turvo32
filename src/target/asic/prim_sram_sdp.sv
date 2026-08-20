@@ -86,6 +86,10 @@ module prim_sram_sdp #(
                 if (WIDTH > 16) begin : gen_32w
                     for (genvar i = 0; i < (WIDTH + 31) / 32; i++) begin : gen_tiles
                         RM_IHPSG13_2P_1024x32_c2_bm_bist block_i (
+                            `ifdef USE_POWER_PINS
+                            .VDD(vdd),
+                            .VSS(vss),
+                            `endif
                             .A_CLK      (clk_i),
                             .A_DIN      (wdata[32*i+:32]),
                             .A_BM       ('1),
@@ -126,6 +130,10 @@ module prim_sram_sdp #(
 
                 else begin : gen_16w
                     RM_IHPSG13_2P_1024x16_c2_bm_bist block_i (
+                        `ifdef USE_POWER_PINS
+                        .VDD(vdd),
+                        .VSS(vss),
+                        `endif
                         .A_CLK      (clk_i),
                         .A_DIN      (wdata[15:0]),
                         .A_BM       ('1),
@@ -172,6 +180,10 @@ module prim_sram_sdp #(
             if (WIDTH > 16) begin : gen_32w
                 for (genvar i = 0; i < (WIDTH + 31) / 32; i++) begin : gen_tiles
                     RM_IHPSG13_2P_512x32_c2_bm_bist block_i (
+                        `ifdef USE_POWER_PINS
+                        .VDD(vdd),
+                        .VSS(vss),
+                        `endif
                         .A_CLK      (clk_i),
                         .A_DIN      (wdata[32*i+:32]),
                         .A_BM       ('1),
@@ -212,6 +224,10 @@ module prim_sram_sdp #(
 
             else if (WIDTH > 8) begin : gen_16w
                 RM_IHPSG13_2P_512x16_c2_bm_bist block_i (
+                    `ifdef USE_POWER_PINS
+                    .VDD(vdd),
+                    .VSS(vss),
+                    `endif
                     .A_CLK      (clk_i),
                     .A_DIN      (wdata[15:0]),
                     .A_BM       ('1),
@@ -251,6 +267,10 @@ module prim_sram_sdp #(
 
             else begin : gen_8w
                 RM_IHPSG13_2P_512x8_c2_bm_bist block_i (
+                    `ifdef USE_POWER_PINS
+                    .VDD(vdd),
+                    .VSS(vss),
+                    `endif
                     .A_CLK      (clk_i),
                     .A_DIN      (wdata[7:0]),
                     .A_BM       ('1),
@@ -296,6 +316,10 @@ module prim_sram_sdp #(
             if (WIDTH > 16) begin : gen_32w
                 for (genvar i = 0; i < (WIDTH + 31) / 32; i++) begin : gen_tiles
                     RM_IHPSG13_2P_256x32_c2_bm_bist block_i (
+                        `ifdef USE_POWER_PINS
+                        .VDD(vdd),
+                        .VSS(vss),
+                        `endif
                         .A_CLK      (clk_i),
                         .A_DIN      (wdata[32*i+:32]),
                         .A_BM       ('1),
@@ -336,6 +360,10 @@ module prim_sram_sdp #(
 
             else if (WIDTH > 8) begin : gen_16w
                 RM_IHPSG13_2P_256x16_c2_bm_bist block_i (
+                    `ifdef USE_POWER_PINS
+                    .VDD(vdd),
+                    .VSS(vss),
+                    `endif
                     .A_CLK      (clk_i),
                     .A_DIN      (wdata[15:0]),
                     .A_BM       ('1),
@@ -375,6 +403,10 @@ module prim_sram_sdp #(
 
             else begin : gen_8w
                 RM_IHPSG13_2P_256x8_c2_bm_bist block_i (
+                    `ifdef USE_POWER_PINS
+                    .VDD(vdd),
+                    .VSS(vss),
+                    `endif
                     .A_CLK      (clk_i),
                     .A_DIN      (wdata[7:0]),
                     .A_BM       ('1),
