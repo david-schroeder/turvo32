@@ -214,14 +214,11 @@ module fpga_top (
         .pmod_c
     );
 
-    logic [7:0] led;
-    assign boardio_f2b = '{led: led, default: '0};
-
     nanosoc_core core_i (
-        .clk_i   (clk),
-        .rst_ni  (sys_rst_n),
-        .switch_i(boardio_b2f.switch),
-        .led_o   (led)
+        .clk_i (clk),
+        .rst_ni(sys_rst_n),
+        .io_i  (boardio_b2f),
+        .io_o  (boardio_f2b)
     );
 
 endmodule
