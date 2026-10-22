@@ -65,12 +65,16 @@ module turvo32_gshare
 	logic [1:0] lp_ns; // local pred next state
 
 	always_comb begin
-		case (lp_wstate_i)
-			NOT_TAKEN_STRONG: lp_ns = lp_wtaken_i ? NOT_TAKEN_WEAK : NOT_TAKEN_STRONG;
-			NOT_TAKEN_WEAK  : lp_ns = lp_wtaken_i ? TAKEN_WEAK     : NOT_TAKEN_STRONG;
-			TAKEN_WEAK      : lp_ns = lp_wtaken_i ? TAKEN_STRONG   : NOT_TAKEN_WEAK;
-			TAKEN_STRONG    : lp_ns = lp_wtaken_i ? TAKEN_STRONG   : TAKEN_WEAK;
-			default         : lp_ns = NOT_TAKEN_WEAK;
+		case ({lp_wstate_i, lp_wtaken_i})
+			{NOT_TAKEN_STRONG, 1'b0},
+			{NOT_TAKEN_WEAK  , 1'b0}: lp_ns = NOT_TAKEN_STRONG;
+			{NOT_TAKEN_STRONG, 1'b1},
+			{TAKEN_WEAK      , 1'b0}: lp_ns = NOT_TAKEN_WEAK;
+			{NOT_TAKEN_WEAK  , 1'b1},
+			{TAKEN_STRONG    , 1'b0}: lp_ns = TAKEN_WEAK;
+			{TAKEN_WEAK      , 1'b1},
+			{TAKEN_STRONG    , 1'b1}: lp_ns = TAKEN_STRONG;
+			default: lp_ns = NOT_TAKEN_WEAK;
 		endcase
 	end
 

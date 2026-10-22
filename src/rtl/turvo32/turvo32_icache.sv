@@ -68,12 +68,14 @@ module turvo32_icache
     logic [31:0] rdata_ways [WAYS-1:0];
     logic        hit_ways   [WAYS-1:0];
 
-    assign hit_o = |hit_ways;
-
     always_comb begin
         instr_o = '0;
+        hit_o   = '0;
         for (int i = 0; i < WAYS; i++) begin
-            if (hit_ways[i]) instr_o = rdata_ways[i];
+            if (hit_ways[i]) begin
+                instr_o = rdata_ways[i];
+                hit_o   = '1;
+            end
         end
     end
 
