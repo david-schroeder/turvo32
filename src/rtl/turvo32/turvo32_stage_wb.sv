@@ -78,7 +78,8 @@ module turvo32_stage_wb
     //             //
     /////////////////
 
-    assign commit_o = valid_wb && ~lsu_stall_i && ~dbus_i.d_denied;
+    assign commit_o = valid_wb && ~lsu_stall_i
+                    && !(dbus_i.d_valid && dbus_i.d_denied);
 
     always_comb begin
         unique case (wb_src_wb)
