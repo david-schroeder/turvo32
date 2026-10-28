@@ -25,7 +25,7 @@ module turvo32_lru
 );
 
 	// True LRU implemented as promotion queue
-	// Used items are put at address 0, address 3 is LRU
+	// Used items are put at address 0, address WAYS-1 is LRU
 
 	logic [WAYS*ENTBITS-1:0] entries     [ENTRIES-1:0];
 	logic                    initialized [ENTRIES-1:0];
