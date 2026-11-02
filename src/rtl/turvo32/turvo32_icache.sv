@@ -14,7 +14,6 @@ module turvo32_icache
 
     // control signals
     input  logic        flush_i,
-    input  logic        update_i,
     output logic        stall_if_o,
 
     // IFU interface
@@ -28,13 +27,6 @@ module turvo32_icache
     output tl_h2d_t     tl_o,
     input  tl_d2h_t     tl_i
 );
-
-    logic update_q;
-
-    always_ff @(posedge clk_i or negedge rst_ni) begin
-        if (~rst_ni) update_q <= '0;
-        else update_q <= update_i;
-    end
 
     ///////////////////////////
     //                       //
@@ -58,7 +50,7 @@ module turvo32_icache
             pc_if_idx <= '0;
             pc_if_tag <= '0;
         end else begin
-            if (update_i) begin
+            if (~stall_if_o) begin
                 pc_if_bo  <= pc_d_bo;
                 pc_if_idx <= pc_d_idx;
                 pc_if_tag <= pc_d_tag;
@@ -78,13 +70,13 @@ module turvo32_icache
         Receiving
     } cache_state_e;
 
-    logic [BO_W-1:0] issued_reqs_d, issued_reqs_q;
-    logic [BO_W-1:0] arrived_rsps_d, arrived_rsps_q;
+    logic [BO_W:0] issued_reqs_d, issued_reqs_q;
+    logic [BO_W:0] arrived_rsps_d, arrived_rsps_q;
 
     cache_state_e state_d, state_q;
 
     logic miss, miss_first_cycle;
-    assign miss = update_q && !hit_o;
+    assign miss = valid_if_i && cacheable_if_i && !hit_o;
     assign miss_first_cycle = miss && state_q == Idle;
 
     always_comb begin
@@ -113,7 +105,7 @@ module turvo32_icache
         a_opcode: Get,
         a_size: 2'h2,
         a_source: issued_reqs_q,
-        a_address: {pc_if_tag, pc_if_idx, issued_reqs_q},
+        a_address: {pc_if_tag, pc_if_idx, issued_reqs_q[BO_W-1:0], 2'h0},
         d_ready: '1,
         default: '0
     };
@@ -146,7 +138,6 @@ module turvo32_icache
 
     logic [$clog2(WAYS)-1:0] way_to_evict;
     logic [$clog2(WAYS)-1:0] hit_way;
-    logic                    do_eviction;
 
     always_comb begin
         instr_o = '0;
@@ -161,7 +152,7 @@ module turvo32_icache
         end
     end
 
-    assign stall_if_o = !hit_o && update_q;
+    assign stall_if_o = miss;
 
     generate
         for (genvar i = 0; i < WAYS; i++) begin : gen_ways
@@ -180,7 +171,7 @@ module turvo32_icache
                     valid <= '{default: '0};
                     valid_rdata <= '0;
                 end else begin
-                    if (update_i) begin
+                    if (~stall_if_o) begin
                         valid_rdata <= valid[pc_d_idx];
                     end
                     if (way_to_evict == i) begin
@@ -188,13 +179,17 @@ module turvo32_icache
                             valid[pc_if_idx] <= '0;
                         end else if (state_q == Receiving && state_d == Idle) begin
                             valid[pc_if_idx] <= '1;
+                            valid_rdata <= '1;
                         end
                     end
                 end
             end
 
             always_ff @(posedge clk_i) begin
-                if (update_i) begin
+                if (stall_if_o) begin
+                    tag_rdata     <= tags[pc_if_idx];
+                    rdata_ways[i] <= lines[{pc_if_idx, pc_if_bo}];
+                end else begin
                     tag_rdata     <= tags[pc_d_idx];
                     rdata_ways[i] <= lines[{pc_d_idx, pc_d_bo}];
                 end
@@ -202,7 +197,7 @@ module turvo32_icache
                     tags[pc_if_idx] <= pc_if_tag;
                 end
                 if (tl_i.d_valid && tl_o.d_ready) begin
-                    lines[{pc_if_idx, tl_i.d_source}] <= tl_i.d_data;
+                    lines[{pc_if_idx, tl_i.d_source[BO_W-1:0]}] <= tl_i.d_data;
                 end
             end
         end : gen_ways

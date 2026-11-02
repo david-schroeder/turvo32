@@ -144,6 +144,26 @@ module turvo32_stage_if
     //               //
     ///////////////////
 
+    /* Instruction Cache */
+
+    turvo32_icache #(
+        .LINE_WORDS(8),
+        .SETS      (64),
+        .WAYS      (2)
+    ) icache_i (
+        .clk_i,
+        .rst_ni,
+        .flush_i       (invalidate_i),
+        .stall_if_o    (),
+        .pc_d_i        (pc_d),
+        .instr_o       (),
+        .hit_o         (),
+        .cacheable_if_i(),
+        .valid_if_i    (),
+        .tl_o          (),
+        .tl_i          ()
+    );
+
     /* Fetch Target Queue */
 
     turvo32_ftq #(

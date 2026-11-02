@@ -41,7 +41,7 @@ flow['fpga_top'] = FpgaTop(dependency_map={'srcs':'srcs'})
 # -----------
 
 module_tbs = [
-    "turvo32_core_tb"
+    "turvo32_icache_tb"
 ]
 
 for name in module_tbs:
