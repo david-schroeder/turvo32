@@ -38,22 +38,30 @@ module turvo32_icache
     localparam IDX_W = $clog2(SETS);
     localparam TAG_W = 30 - BO_W - IDX_W;
 
-    logic [ BO_W-1:0] pc_d_bo,  pc_if_bo;
-    logic [IDX_W-1:0] pc_d_idx, pc_if_idx;
-    logic [TAG_W-1:0] pc_d_tag, pc_if_tag;
+    logic [ BO_W-1:0] pc_d_bo,  pc_if_bo,  pc_miss_bo;
+    logic [IDX_W-1:0] pc_d_idx, pc_if_idx, pc_miss_idx;
+    logic [TAG_W-1:0] pc_d_tag, pc_if_tag, pc_miss_tag;
 
     assign {pc_d_tag, pc_d_idx, pc_d_bo} = pc_d_i[31:2];
 
     always_ff @(posedge clk_i or negedge rst_ni) begin
         if (~rst_ni) begin
-            pc_if_bo  <= '0;
-            pc_if_idx <= '0;
-            pc_if_tag <= '0;
+            pc_if_bo    <= '0;
+            pc_if_idx   <= '0;
+            pc_if_tag   <= '0;
+            pc_miss_bo  <= '0;
+            pc_miss_idx <= '0;
+            pc_miss_tag <= '0;
         end else begin
+            // pc_if_* update is not gated on stall
+            // this enables non-blocking behavior
+            pc_if_bo  <= pc_d_bo;
+            pc_if_idx <= pc_d_idx;
+            pc_if_tag <= pc_d_tag;
             if (~stall_if_o) begin
-                pc_if_bo  <= pc_d_bo;
-                pc_if_idx <= pc_d_idx;
-                pc_if_tag <= pc_d_tag;
+                pc_miss_bo  <= pc_d_bo;
+                pc_miss_idx <= pc_d_idx;
+                pc_miss_tag <= pc_d_tag;
             end
         end
     end
@@ -111,7 +119,7 @@ module turvo32_icache
         a_opcode: Get,
         a_size: 2'h2,
         a_source: issued_reqs_q,
-        a_address: {pc_if_tag, pc_if_idx, issued_reqs_q[BO_W-1:0], 2'h0},
+        a_address: {pc_miss_tag, pc_miss_idx, issued_reqs_q[BO_W-1:0], 2'h0},
         d_ready: '1,
         default: '0
     };
@@ -177,34 +185,27 @@ module turvo32_icache
                     valid <= '{default: '0};
                     valid_rdata <= '0;
                 end else begin
-                    if (~stall_if_o) begin
-                        valid_rdata <= valid[pc_d_idx];
-                    end
+                    valid_rdata <= valid[pc_d_idx];
                     if (way_to_evict == i) begin
                         if (miss_first_cycle) begin
-                            valid[pc_if_idx] <= '0;
+                            valid[pc_miss_idx] <= '0;
                             valid_rdata <= '0;
                         end else if (state_q == Receiving && state_d == Idle) begin
-                            valid[pc_if_idx] <= '1;
-                            valid_rdata <= '1;
+                            valid[pc_miss_idx] <= '1;
+                            if (pc_miss_idx == pc_d_idx) valid_rdata <= '1;
                         end
                     end
                 end
             end
 
             always_ff @(posedge clk_i) begin
-                if (stall_if_o) begin
-                    tag_rdata     <= tags[pc_if_idx];
-                    rdata_ways[i] <= lines[{pc_if_idx, pc_if_bo}];
-                end else begin
-                    tag_rdata     <= tags[pc_d_idx];
-                    rdata_ways[i] <= lines[{pc_d_idx, pc_d_bo}];
-                end
+                tag_rdata     <= tags[pc_d_idx];
+                rdata_ways[i] <= lines[{pc_d_idx, pc_d_bo}];
                 if (miss_first_cycle && way_to_evict == i) begin
-                    tags[pc_if_idx] <= pc_if_tag;
+                    tags[pc_miss_idx] <= pc_miss_tag;
                 end
                 if (tl_i.d_valid && tl_o.d_ready) begin
-                    lines[{pc_if_idx, tl_i.d_source[BO_W-1:0]}] <= tl_i.d_data;
+                    lines[{pc_miss_idx, tl_i.d_source[BO_W-1:0]}] <= tl_i.d_data;
                 end
             end
         end : gen_ways
