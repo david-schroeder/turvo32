@@ -30,8 +30,8 @@ module turvo32_icache_tb;
     tl_d2h_t     dut_tl_d2h;
 
     turvo32_icache #(
-        .LINE_WORDS(8),
-        .SETS      (32),
+        .LINE_WORDS(2),
+        .SETS      (4),
         .WAYS      (2)
     ) DUT (
         .clk_i         (clk),

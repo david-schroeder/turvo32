@@ -76,26 +76,32 @@ module turvo32_icache
     cache_state_e state_d, state_q;
 
     logic miss, miss_first_cycle;
-    assign miss = valid_if_i && cacheable_if_i && !hit_o;
-    assign miss_first_cycle = miss && state_q == Idle;
 
     always_comb begin
         state_d = state_q;
         issued_reqs_d = issued_reqs_q;
         arrived_rsps_d = arrived_rsps_q;
+        miss = '0;
+        miss_first_cycle = '0;
 
         if (tl_o.a_valid && tl_i.a_ready) issued_reqs_d = issued_reqs_q + 1;
         if (tl_i.d_valid && tl_o.d_ready) arrived_rsps_d = arrived_rsps_q + 1;
 
         case (state_q)
             Idle: begin
-                if (miss) state_d = Fetching;
+                if (valid_if_i && cacheable_if_i && !hit_o) begin
+                    state_d = Fetching;
+                    miss = '1;
+                    miss_first_cycle = '1;
+                end
             end
             Fetching: begin
                 if (issued_reqs_d == LINE_WORDS) state_d = Receiving;
+                miss = '1;
             end
             Receiving: begin
                 if (arrived_rsps_d == LINE_WORDS) state_d = Idle;
+                miss = '1;
             end
         endcase
     end
@@ -177,6 +183,7 @@ module turvo32_icache
                     if (way_to_evict == i) begin
                         if (miss_first_cycle) begin
                             valid[pc_if_idx] <= '0;
+                            valid_rdata <= '0;
                         end else if (state_q == Receiving && state_d == Idle) begin
                             valid[pc_if_idx] <= '1;
                             valid_rdata <= '1;
@@ -213,7 +220,7 @@ module turvo32_icache
         .lru_way_o (way_to_evict),
         .use_i     (hit_o),
         .use_way_i (hit_way),
-        .use_addr_i(pc_d_idx)
+        .use_addr_i(pc_if_idx)
     );
 
 endmodule
