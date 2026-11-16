@@ -615,6 +615,9 @@ add wave -noupdate -expand -group {Program Counters} /turvo32_icache_tb/DUT/pc_d
 add wave -noupdate -expand -group {Program Counters} /turvo32_icache_tb/DUT/pc_if_tag
 add wave -noupdate -expand -group {Program Counters} /turvo32_icache_tb/DUT/pc_if_idx
 add wave -noupdate -expand -group {Program Counters} /turvo32_icache_tb/DUT/pc_if_bo
+add wave -noupdate -expand -group {Program Counters} /turvo32_icache_tb/DUT/pc_miss_tag
+add wave -noupdate -expand -group {Program Counters} /turvo32_icache_tb/DUT/pc_miss_idx
+add wave -noupdate -expand -group {Program Counters} /turvo32_icache_tb/DUT/pc_miss_bo
 add wave -noupdate -expand -group {Bus FSM} /turvo32_icache_tb/DUT/tl_o
 add wave -noupdate -expand -group {Bus FSM} /turvo32_icache_tb/DUT/tl_i
 add wave -noupdate -expand -group {Bus FSM} /turvo32_icache_tb/DUT/issued_reqs_d
@@ -628,6 +631,7 @@ add wave -noupdate /turvo32_icache_tb/DUT/miss_first_cycle
 add wave -noupdate /turvo32_icache_tb/DUT/rdata_ways
 add wave -noupdate /turvo32_icache_tb/DUT/hit_ways
 add wave -noupdate /turvo32_icache_tb/DUT/way_to_evict
+add wave -noupdate /turvo32_icache_tb/DUT/evict_way_q
 add wave -noupdate /turvo32_icache_tb/DUT/hit_way
 add wave -noupdate -divider {Cache data}
 add wave -noupdate -expand -group {Way 0} {/turvo32_icache_tb/DUT/gen_ways[0]/valid}
@@ -641,7 +645,7 @@ add wave -noupdate -expand -group {Way 1} -radix riscv_instr {/turvo32_icache_tb
 add wave -noupdate -expand -group {Way 1} -radix riscv_instr {/turvo32_icache_tb/DUT/gen_ways[1]/tag_rdata}
 add wave -noupdate -expand -group {Way 1} -radix riscv_instr {/turvo32_icache_tb/DUT/gen_ways[1]/valid_rdata}
 TreeUpdate [SetDefaultTree]
-WaveRestoreCursors {{Cursor 1} {96005233 fs} 0}
+WaveRestoreCursors {{Cursor 1} {155786191 fs} 0}
 quietly wave cursor active 1
 configure wave -namecolwidth 260
 configure wave -valuecolwidth 100
@@ -657,4 +661,4 @@ configure wave -griddelta 40
 configure wave -timeline 0
 configure wave -timelineunits fs
 update
-WaveRestoreZoom {0 fs} {75303627 fs}
+WaveRestoreZoom {92345997 fs} {103757495 fs}

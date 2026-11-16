@@ -49,20 +49,12 @@ module turvo32_icache
             pc_if_bo    <= '0;
             pc_if_idx   <= '0;
             pc_if_tag   <= '0;
-            pc_miss_bo  <= '0;
-            pc_miss_idx <= '0;
-            pc_miss_tag <= '0;
         end else begin
             // pc_if_* update is not gated on stall
             // this enables non-blocking behavior
             pc_if_bo  <= pc_d_bo;
             pc_if_idx <= pc_d_idx;
             pc_if_tag <= pc_d_tag;
-            if (~stall_if_o) begin
-                pc_miss_bo  <= pc_d_bo;
-                pc_miss_idx <= pc_d_idx;
-                pc_miss_tag <= pc_d_tag;
-            end
         end
     end
 
@@ -80,7 +72,9 @@ module turvo32_icache
 
     logic [  BO_W:0] issued_reqs_d, issued_reqs_q;
     logic [  BO_W:0] arrived_rsps_d, arrived_rsps_q;
-    logic [BO_W-1:0] req_bo, rsp_bo;
+    logic [BO_W-1:0] req_bo, rsp_bo, rsp_bo_q;
+
+    logic [31:0] tli_data_q;
 
     // TileLink source field <-> block offset mapping
     // remapped s.t. source 0 = block offset of miss (critical word)
@@ -88,9 +82,33 @@ module turvo32_icache
     assign req_bo = pc_miss_bo + issued_reqs_q;
     assign rsp_bo = tl_i.d_source - pc_miss_bo;
 
+    always_ff @(posedge clk_i or negedge rst_ni) begin
+        if (~rst_ni) begin
+            rsp_bo_q <= '0;
+            tli_data_q <= '0;
+        end else begin
+            rsp_bo_q <= rsp_bo;
+            tli_data_q <= tl_i.d_data;
+        end
+    end
+
     cache_state_e state_d, state_q;
 
     logic miss, miss_first_cycle;
+
+    always_ff @(posedge clk_i or negedge rst_ni) begin
+        if(~rst_ni) begin
+            pc_miss_tag <= '0;
+            pc_miss_idx <= '0;
+            pc_miss_bo  <= '0;
+        end else begin
+            if (state_q == Idle) begin
+                pc_miss_tag <= pc_d_tag;
+                pc_miss_idx <= pc_d_idx;
+                pc_miss_bo  <= pc_d_bo;
+            end
+        end
+    end
 
     always_comb begin
         state_d = state_q;
@@ -159,11 +177,20 @@ module turvo32_icache
     //                //
     ////////////////////
 
-    logic [31:0] rdata_ways [WAYS-1:0];
-    logic        hit_ways   [WAYS-1:0];
+    logic [31:0] rdata_ways     [WAYS-1:0];
+    logic [31:0] rdata_ways_byp [WAYS-1:0]; // rdata_ways with fetch bypasses
+    logic        hit_ways       [WAYS-1:0];
 
+    logic [$clog2(WAYS)-1:0] lru_way, evict_way_q;
     logic [$clog2(WAYS)-1:0] way_to_evict;
     logic [$clog2(WAYS)-1:0] hit_way;
+
+    always_ff @(posedge clk_i or negedge rst_ni) begin
+        if (~rst_ni) evict_way_q <= '0;
+        else if (miss_first_cycle) evict_way_q <= lru_way;
+    end
+
+    assign way_to_evict = miss_first_cycle ? lru_way : evict_way_q;
 
     always_comb begin
         instr_o = '0;
@@ -171,14 +198,14 @@ module turvo32_icache
         hit_way = way_to_evict;
         for (int i = 0; i < WAYS; i++) begin
             if (hit_ways[i]) begin
-                instr_o = rdata_ways[i];
+                instr_o = rdata_ways_byp[i];
                 hit_way = i;
                 hit_o   = '1;
             end
         end
     end
 
-    assign stall_if_o = miss;
+    assign stall_if_o = valid_if_i && cacheable_if_i && ~hit_o;
 
     generate
         for (genvar i = 0; i < WAYS; i++) begin : gen_ways
@@ -190,7 +217,31 @@ module turvo32_icache
             logic [TAG_W-1:0] tag_rdata;
             logic             valid_rdata;
 
-            assign hit_ways[i] = valid_rdata && tag_rdata == pc_if_tag;
+            always_comb begin
+                rdata_ways_byp[i] = rdata_ways[i];
+                // simple case: check tag + valid bit
+                hit_ways[i] = valid_rdata && tag_rdata == pc_if_tag;
+
+                if (~valid_rdata && evict_way_q == i) begin
+                    // bypass case for demand-fetched blocks:
+                    // if valid_rdata is zero BUT pc_if_{tag, idx} match
+                    // pc_miss_{tag, idx}, pc_if_bo is checked against
+                    // the already arrived word count
+                    // Accounting for the CWF scheduling approach, this means
+                    // taking pc_if_bo - pc_miss_bo to derive the position in
+                    // the fetch sequence of the requested block
+                    // if it is strictly less than arrived_rsps_q, we have
+                    // a hit
+                    if ({pc_if_tag, pc_if_idx} == {pc_miss_tag, pc_miss_idx}) begin
+                        if (pc_if_bo - pc_miss_bo < arrived_rsps_q) begin
+                            hit_ways[i] = '1;
+                            if (pc_if_bo == rsp_bo_q) begin
+                                rdata_ways_byp[i] = tli_data_q;
+                            end
+                        end
+                    end
+                end
+            end
 
             always_ff @(posedge clk_i or negedge rst_ni) begin
                 if (~rst_ni) begin
@@ -200,11 +251,10 @@ module turvo32_icache
                     valid_rdata <= valid[pc_d_idx];
                     if (way_to_evict == i) begin
                         if (miss_first_cycle) begin
-                            valid[pc_miss_idx] <= '0;
+                            valid[pc_if_idx] <= '0;
                             valid_rdata <= '0;
                         end else if (state_q == Receiving && state_d == Idle) begin
                             valid[pc_miss_idx] <= '1;
-                            if (pc_miss_idx == pc_d_idx) valid_rdata <= '1;
                         end
                     end
                 end
@@ -214,9 +264,9 @@ module turvo32_icache
                 tag_rdata     <= tags[pc_d_idx];
                 rdata_ways[i] <= lines[{pc_d_idx, pc_d_bo}];
                 if (miss_first_cycle && way_to_evict == i) begin
-                    tags[pc_miss_idx] <= pc_miss_tag;
+                    tags[pc_if_idx] <= pc_if_tag;
                 end
-                if (tl_i.d_valid && tl_o.d_ready && way_to_evict == i) begin
+                if (tl_i.d_valid && tl_o.d_ready && evict_way_q == i) begin
                     lines[{pc_miss_idx, rsp_bo}] <= tl_i.d_data;
                 end
             end
@@ -230,7 +280,7 @@ module turvo32_icache
         .clk_i,
         .rst_ni,
         .r_addr_i  (pc_d_idx),
-        .lru_way_o (way_to_evict),
+        .lru_way_o (lru_way),
         .use_i     (hit_o),
         .use_way_i (hit_way),
         .use_addr_i(pc_if_idx)

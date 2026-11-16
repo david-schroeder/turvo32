@@ -31,7 +31,7 @@ module turvo32_icache_tb;
 
     turvo32_icache #(
         .LINE_WORDS(4),
-        .SETS      (4),
+        .SETS      (8),
         .WAYS      (2)
     ) DUT (
         .clk_i         (clk),
@@ -76,6 +76,18 @@ module turvo32_icache_tb;
         dut_valid_if  <= '1;
         @(posedge clk);
         for (int i = 0; i < 100; i++) begin
+            #1;
+            dut_pc_d <= dut_stall ? dut_pc_d : dut_pc_d + 4;
+            @(posedge clk);
+        end
+
+        @(posedge clk);
+        dut_pc_d      <= 32'h00000088;
+        @(posedge clk);
+        dut_valid_if  <= '1;
+        @(posedge clk);
+        for (int i = 0; i < 100; i++) begin
+            #1;
             dut_pc_d <= dut_stall ? dut_pc_d : dut_pc_d + 4;
             @(posedge clk);
         end
