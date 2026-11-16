@@ -70,45 +70,12 @@ module turvo32_icache
         Receiving
     } cache_state_e;
 
-    logic [  BO_W:0] issued_reqs_d, issued_reqs_q;
-    logic [  BO_W:0] arrived_rsps_d, arrived_rsps_q;
-    logic [BO_W-1:0] req_bo, rsp_bo, rsp_bo_q;
-
-    logic [31:0] tli_data_q;
-
-    // TileLink source field <-> block offset mapping
-    // remapped s.t. source 0 = block offset of miss (critical word)
-    // thus allowing critical word first fetching
-    assign req_bo = pc_miss_bo + issued_reqs_q;
-    assign rsp_bo = tl_i.d_source - pc_miss_bo;
-
-    always_ff @(posedge clk_i or negedge rst_ni) begin
-        if (~rst_ni) begin
-            rsp_bo_q <= '0;
-            tli_data_q <= '0;
-        end else begin
-            rsp_bo_q <= rsp_bo;
-            tli_data_q <= tl_i.d_data;
-        end
-    end
-
     cache_state_e state_d, state_q;
-
     logic miss, miss_first_cycle;
 
-    always_ff @(posedge clk_i or negedge rst_ni) begin
-        if(~rst_ni) begin
-            pc_miss_tag <= '0;
-            pc_miss_idx <= '0;
-            pc_miss_bo  <= '0;
-        end else begin
-            if (state_q == Idle) begin
-                pc_miss_tag <= pc_d_tag;
-                pc_miss_idx <= pc_d_idx;
-                pc_miss_bo  <= pc_d_bo;
-            end
-        end
-    end
+    // not BO_W-1:0 because they must be able to hold BO_W as a value
+    logic [BO_W:0] issued_reqs_d, issued_reqs_q;
+    logic [BO_W:0] arrived_rsps_d, arrived_rsps_q;
 
     always_comb begin
         state_d = state_q;
@@ -122,7 +89,7 @@ module turvo32_icache
 
         case (state_q)
             Idle: begin
-                if (valid_if_i && cacheable_if_i && !hit_o) begin
+                if (stall_if_o) begin
                     state_d = Fetching;
                     miss = '1;
                     miss_first_cycle = '1;
@@ -137,6 +104,58 @@ module turvo32_icache
                 miss = '1;
             end
         endcase
+    end
+
+    always_ff @(posedge clk_i or negedge rst_ni) begin
+        if (~rst_ni) begin
+            pc_miss_tag    <= '0;
+            pc_miss_idx    <= '0;
+            pc_miss_bo     <= '0;
+            state_q        <= Idle;
+            issued_reqs_q  <= '0;
+            arrived_rsps_q <= '0;
+        end else begin
+            state_q <= state_d;
+            issued_reqs_q <= issued_reqs_d;
+            arrived_rsps_q <= arrived_rsps_d;
+
+            case (state_q)
+                Idle: begin
+                    pc_miss_tag    <= pc_d_tag;
+                    pc_miss_idx    <= pc_d_idx;
+                    pc_miss_bo     <= pc_d_bo;
+                    arrived_rsps_q <= '0;
+                end
+                Receiving: issued_reqs_q <= '0;
+            endcase
+        end
+    end
+
+    assign stall_if_o = valid_if_i && cacheable_if_i && ~hit_o;
+
+    ////////////////////////////////////
+    //                                //
+    // Misc. TileLink Interface Logic //
+    //                                //
+    ////////////////////////////////////
+
+    // TileLink source field <-> block offset mapping
+    // remapped s.t. source 0 = block offset of miss (critical word)
+    // thus allowing critical word first fetching
+    logic [BO_W-1:0] req_bo, rsp_bo, rsp_bo_q;
+    assign req_bo = pc_miss_bo + issued_reqs_q;
+    assign rsp_bo = tl_i.d_source - pc_miss_bo;
+
+    logic [31:0] tli_data_q;
+
+    always_ff @(posedge clk_i or negedge rst_ni) begin
+        if(~rst_ni) begin
+            rsp_bo_q   <= '0;
+            tli_data_q <= '0;
+        end else begin
+            rsp_bo_q   <= rsp_bo;
+            tli_data_q <= tl_i.d_data;
+        end
     end
 
     assign tl_o = '{
@@ -154,26 +173,9 @@ module turvo32_icache
         default: '0
     };
 
-    always_ff @(posedge clk_i or negedge rst_ni) begin
-        if (~rst_ni) begin
-            state_q <= Idle;
-            issued_reqs_q <= '0;
-            arrived_rsps_q <= '0;
-        end else begin
-            state_q <= state_d;
-            issued_reqs_q <= issued_reqs_d;
-            arrived_rsps_q <= arrived_rsps_d;
-
-            case (state_q)
-                Idle: arrived_rsps_q <= '0;
-                Receiving: issued_reqs_q <= '0;
-            endcase
-        end
-    end
-
     ////////////////////
     //                //
-    // Way generation //
+    // Way Generation //
     //                //
     ////////////////////
 
@@ -181,16 +183,10 @@ module turvo32_icache
     logic [31:0] rdata_ways_byp [WAYS-1:0]; // rdata_ways with fetch bypasses
     logic        hit_ways       [WAYS-1:0];
 
-    logic [$clog2(WAYS)-1:0] lru_way, evict_way_q;
-    logic [$clog2(WAYS)-1:0] way_to_evict;
+    // IDs of ways
+    logic [$clog2(WAYS)-1:0] lru_way, evict_way_q; // evict_way_q ~= lru_way_q
+    logic [$clog2(WAYS)-1:0] way_to_evict; // replaced way during eviction
     logic [$clog2(WAYS)-1:0] hit_way;
-
-    always_ff @(posedge clk_i or negedge rst_ni) begin
-        if (~rst_ni) evict_way_q <= '0;
-        else if (miss_first_cycle) evict_way_q <= lru_way;
-    end
-
-    assign way_to_evict = miss_first_cycle ? lru_way : evict_way_q;
 
     always_comb begin
         instr_o = '0;
@@ -205,17 +201,20 @@ module turvo32_icache
         end
     end
 
-    assign stall_if_o = valid_if_i && cacheable_if_i && ~hit_o;
-
     generate
         for (genvar i = 0; i < WAYS; i++) begin : gen_ways
-            /* memories */
+
+            /* Declarations */
+
             logic             valid [SETS-1:0];
             logic [TAG_W-1:0] tags  [SETS-1:0];
             logic [     31:0] lines [SETS*LINE_WORDS-1:0];
 
             logic [TAG_W-1:0] tag_rdata;
             logic             valid_rdata;
+
+
+            /* Combinational hit + rdata generation */
 
             always_comb begin
                 rdata_ways_byp[i] = rdata_ways[i];
@@ -243,6 +242,9 @@ module turvo32_icache
                 end
             end
 
+
+            /* Valid bit management */
+
             always_ff @(posedge clk_i or negedge rst_ni) begin
                 if (~rst_ni) begin
                     valid <= '{default: '0};
@@ -260,6 +262,9 @@ module turvo32_icache
                 end
             end
 
+
+            /* Block RAM management */
+
             always_ff @(posedge clk_i) begin
                 tag_rdata     <= tags[pc_d_idx];
                 rdata_ways[i] <= lines[{pc_d_idx, pc_d_bo}];
@@ -270,8 +275,22 @@ module turvo32_icache
                     lines[{pc_miss_idx, rsp_bo}] <= tl_i.d_data;
                 end
             end
+
         end : gen_ways
     endgenerate
+
+    //////////////////////////
+    //                      //
+    // LRU + Way management //
+    //                      //
+    //////////////////////////
+
+    always_ff @(posedge clk_i or negedge rst_ni) begin
+        if (~rst_ni) evict_way_q <= '0;
+        else if (miss_first_cycle) evict_way_q <= lru_way;
+    end
+
+    assign way_to_evict = miss_first_cycle ? lru_way : evict_way_q;
 
     turvo32_lru #(
         .WAYS   (WAYS),
