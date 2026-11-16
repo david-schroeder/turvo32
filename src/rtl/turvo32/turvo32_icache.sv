@@ -78,8 +78,15 @@ module turvo32_icache
         Receiving
     } cache_state_e;
 
-    logic [BO_W:0] issued_reqs_d, issued_reqs_q;
-    logic [BO_W:0] arrived_rsps_d, arrived_rsps_q;
+    logic [  BO_W:0] issued_reqs_d, issued_reqs_q;
+    logic [  BO_W:0] arrived_rsps_d, arrived_rsps_q;
+    logic [BO_W-1:0] req_bo, rsp_bo;
+
+    // TileLink source field <-> block offset mapping
+    // remapped s.t. source 0 = block offset of miss (critical word)
+    // thus allowing critical word first fetching
+    assign req_bo = pc_miss_bo + issued_reqs_q;
+    assign rsp_bo = tl_i.d_source - pc_miss_bo;
 
     cache_state_e state_d, state_q;
 
@@ -119,7 +126,12 @@ module turvo32_icache
         a_opcode: Get,
         a_size: 2'h2,
         a_source: issued_reqs_q,
-        a_address: {pc_miss_tag, pc_miss_idx, issued_reqs_q[BO_W-1:0], 2'h0},
+        a_address: {
+            pc_miss_tag,
+            pc_miss_idx,
+            req_bo,
+            2'h0
+        },
         d_ready: '1,
         default: '0
     };
@@ -204,8 +216,8 @@ module turvo32_icache
                 if (miss_first_cycle && way_to_evict == i) begin
                     tags[pc_miss_idx] <= pc_miss_tag;
                 end
-                if (tl_i.d_valid && tl_o.d_ready) begin
-                    lines[{pc_miss_idx, tl_i.d_source[BO_W-1:0]}] <= tl_i.d_data;
+                if (tl_i.d_valid && tl_o.d_ready && way_to_evict == i) begin
+                    lines[{pc_miss_idx, rsp_bo}] <= tl_i.d_data;
                 end
             end
         end : gen_ways

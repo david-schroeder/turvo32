@@ -71,7 +71,7 @@ module turvo32_icache_tb;
         @(posedge clk);
         rstn          <= '1;
         @(posedge clk);
-        dut_pc_d      <= 32'h00000080;
+        dut_pc_d      <= 32'h00000088;
         @(posedge clk);
         dut_valid_if  <= '1;
         @(posedge clk);
