@@ -6,7 +6,7 @@ module turvo32_icache
     import tilelink_pkg::*;
 #(
     parameter int LINE_WORDS = 8,
-    parameter int SETS = 64,
+    parameter int SETS = 128,
     parameter int WAYS = 2
 ) (
     input  logic clk_i,
@@ -70,7 +70,7 @@ module turvo32_icache
         Receiving
     } cache_state_e;
 
-    cache_state_e state_d, state_q;
+    cache_state_e state_d, state_q, state_q_q;
     logic miss, miss_first_cycle;
 
     // not BO_W-1:0 because they must be able to hold BO_W as a value
@@ -112,11 +112,13 @@ module turvo32_icache
             pc_miss_idx    <= '0;
             pc_miss_bo     <= '0;
             state_q        <= Idle;
+            state_q_q      <= Idle;
             issued_reqs_q  <= '0;
             arrived_rsps_q <= '0;
         end else begin
-            state_q <= state_d;
-            issued_reqs_q <= issued_reqs_d;
+            state_q        <= state_d;
+            state_q_q      <= state_q;
+            issued_reqs_q  <= issued_reqs_d;
             arrived_rsps_q <= arrived_rsps_d;
 
             case (state_q)
@@ -221,19 +223,21 @@ module turvo32_icache
                 // simple case: check tag + valid bit
                 hit_ways[i] = valid_rdata && tag_rdata == pc_if_tag;
 
-                if (~valid_rdata && evict_way_q == i) begin
+                if (state_q_q != Idle && evict_way_q == i) begin
                     // bypass case for demand-fetched blocks:
-                    // if valid_rdata is zero BUT pc_if_{tag, idx} match
+                    // if we're not in idle state and pc_if_{tag, idx} match
                     // pc_miss_{tag, idx}, pc_if_bo is checked against
                     // the already arrived word count
+                    // we also want to do the bypass check in the cycle after
+                    // the final cycle of a demand fetch, thus state_q_q
                     // Accounting for the CWF scheduling approach, this means
                     // taking pc_if_bo - pc_miss_bo to derive the position in
                     // the fetch sequence of the requested block
                     // if it is strictly less than arrived_rsps_q, we have
                     // a hit
                     if ({pc_if_tag, pc_if_idx} == {pc_miss_tag, pc_miss_idx}) begin
+                        hit_ways[i] = pc_if_bo - pc_miss_bo < arrived_rsps_q;
                         if (pc_if_bo - pc_miss_bo < arrived_rsps_q) begin
-                            hit_ways[i] = '1;
                             if (pc_if_bo == rsp_bo_q) begin
                                 rdata_ways_byp[i] = tli_data_q;
                             end
@@ -245,6 +249,8 @@ module turvo32_icache
 
             /* Valid bit management */
 
+            // TODO: think about using a denser primitive for this?
+
             always_ff @(posedge clk_i or negedge rst_ni) begin
                 if (~rst_ni) begin
                     valid <= '{default: '0};
@@ -252,10 +258,7 @@ module turvo32_icache
                 end else begin
                     valid_rdata <= valid[pc_d_idx];
                     if (way_to_evict == i) begin
-                        if (miss_first_cycle) begin
-                            valid[pc_if_idx] <= '0;
-                            valid_rdata <= '0;
-                        end else if (state_q == Receiving && state_d == Idle) begin
+                        if (state_q == Receiving && state_d == Idle) begin
                             valid[pc_miss_idx] <= '1;
                         end
                     end
