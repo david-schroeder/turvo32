@@ -67,7 +67,8 @@ module turvo32_icache
     typedef enum logic [1:0] {
         Idle,
         Fetching,
-        Receiving
+        Receiving,
+        Drain // Flushed during miss / fetch -> await outstanding rsps
     } cache_state_e;
 
     cache_state_e state_d, state_q, state_q_q;
@@ -90,6 +91,8 @@ module turvo32_icache
         case (state_q)
             Idle: begin
                 if (stall_if_o) begin
+                    // Should be fine to continue to Fetching *even if* flush_i
+                    // is asserted (no reqs sent yet, so no stale data)
                     state_d = Fetching;
                     miss = '1;
                     miss_first_cycle = '1;
@@ -98,9 +101,15 @@ module turvo32_icache
             Fetching: begin
                 if (issued_reqs_d == LINE_WORDS) state_d = Receiving;
                 miss = '1;
+                if (flush_i) state_d = Drain;
             end
             Receiving: begin
                 if (arrived_rsps_d == LINE_WORDS) state_d = Idle;
+                miss = '1;
+                if (flush_i) state_d = Drain;
+            end
+            Drain: begin
+                if (arrived_rsps_d == issued_reqs_q || issued_reqs_q == 0) state_d = Idle;
                 miss = '1;
             end
         endcase
@@ -130,6 +139,8 @@ module turvo32_icache
                 end
                 Receiving: issued_reqs_q <= '0;
             endcase
+
+            if (state_q == Drain && state_d == Idle) issued_reqs_q <= '0;
         end
     end
 
@@ -244,6 +255,11 @@ module turvo32_icache
                         end
                     end
                 end
+
+                // Override case: no hits during flushes
+                if (flush_i || state_q == Drain || state_q_q == Drain) begin
+                    hit_ways[i] = '0;
+                end
             end
 
 
@@ -261,6 +277,10 @@ module turvo32_icache
                         if (state_q == Receiving && state_d == Idle) begin
                             valid[pc_miss_idx] <= '1;
                         end
+                    end
+                    if (flush_i) begin
+                        valid_rdata <= '0;
+                        valid <= '{default: '0};
                     end
                 end
             end

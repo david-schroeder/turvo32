@@ -63,7 +63,6 @@ module turvo32_icache_tb;
 
     initial begin
         rstn          <= '0;
-        dut_flush     <= '0;
         dut_pc_d      <= '0;
         dut_cacheable <= '1;
         dut_valid_if  <= '0;
@@ -95,6 +94,14 @@ module turvo32_icache_tb;
         for (int i = 0; i < 100; i++) @(posedge clk);
 
         $finish;
+    end
+
+    initial begin
+        dut_flush <= '0;
+        for (int i = 0; i < 57; i++) @(posedge clk);
+        dut_flush <= '1;
+        @(posedge clk);
+        dut_flush <= '0;
     end
 
 endmodule
