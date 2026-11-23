@@ -80,6 +80,7 @@ module turvo32_top
     logic [BTB_WAYW-1:0] btb_way_id;
     logic [    BP_N-1:0] bp_waddr_id;
     logic [         1:0] bp_wstate_id;
+    logic                flush_cache_id;
 
     // EX stage signals
     logic [        31:0] pc_ex;
@@ -163,34 +164,35 @@ module turvo32_top
         .clk_i,
         .rst_ni,
 
-        .ns_ready_i  (id_stage_ready),
-        .ns_valid_o  (if_stage_valid),
-        .invalidate_i(inval_if_mem),
+        .ns_ready_i   (id_stage_ready),
+        .ns_valid_o   (if_stage_valid),
+        .invalidate_i (inval_if_mem),
+        .flush_cache_i(flush_cache_id),
 
-        .jump_tgt_i  (jump_tgt_mem),
-        .do_jump_i   (do_jump_mem),
+        .jump_tgt_i   (jump_tgt_mem),
+        .do_jump_i    (do_jump_mem),
 
-        .pc_o        (pc_if),
-        .pc_seq_o    (pc_seq_if),
-        .instr_o     (instr_if),
-        .bus_err_o   (bus_err_if),
+        .pc_o         (pc_if),
+        .pc_seq_o     (pc_seq_if),
+        .instr_o      (instr_if),
+        .bus_err_o    (bus_err_if),
 
-        .btb_hit_o   (btb_hit_if),
-        .btb_way_o   (btb_way_if),
-        .btb_way_i   (btb_way_mem),
-        .btb_pc_i    (btb_pc_mem),
-        .btb_tgt_i   (btb_tgt_mem),
-        .btb_cond_i  (btb_cond_mem),
-        .btb_we_i    (btb_we_mem),
+        .btb_hit_o    (btb_hit_if),
+        .btb_way_o    (btb_way_if),
+        .btb_way_i    (btb_way_mem),
+        .btb_pc_i     (btb_pc_mem),
+        .btb_tgt_i    (btb_tgt_mem),
+        .btb_cond_i   (btb_cond_mem),
+        .btb_we_i     (btb_we_mem),
 
-        .bp_waddr_o  (bp_waddr_if),
-        .bp_wstate_o (bp_wstate_if),
-        .bp_ghr_we_i (bp_ghr_we_mem),
-        .bp_ghr_wd_i (bp_ghr_wd_mem),
-        .bp_we_i     (bp_we_mem),
-        .bp_waddr_i  (bp_waddr_mem),
-        .bp_wstate_i (bp_wstate_mem),
-        .bp_wtaken_i (bp_wtaken_mem),
+        .bp_waddr_o   (bp_waddr_if),
+        .bp_wstate_o  (bp_wstate_if),
+        .bp_ghr_we_i  (bp_ghr_we_mem),
+        .bp_ghr_wd_i  (bp_ghr_wd_mem),
+        .bp_we_i      (bp_we_mem),
+        .bp_waddr_i   (bp_waddr_mem),
+        .bp_wstate_i  (bp_wstate_mem),
+        .bp_wtaken_i  (bp_wtaken_mem),
 
         .ibus_o,
         .ibus_i

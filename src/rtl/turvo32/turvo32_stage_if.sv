@@ -20,6 +20,7 @@ module turvo32_stage_if
     output logic ns_valid_o,
     input  logic ns_ready_i,
     input  logic invalidate_i,
+    input  logic flush_cache_i,
 
     input  logic [        31:0] jump_tgt_i,
     input  logic                do_jump_i,
@@ -62,6 +63,14 @@ module turvo32_stage_if
     logic [31:0] pc_seq;
     logic        is_first_cycle;
     logic        update_pc;
+
+    // Cache
+    logic        cacheable_if;
+    logic        cache_hit_if;
+    logic        cache_stall_if;
+    logic [31:0] cache_instr_if;
+    tl_h2d_t     cache_req;
+    tl_d2h_t     cache_rsp;
 
     // FTQ
     logic        ftq_ready;
@@ -153,15 +162,15 @@ module turvo32_stage_if
     ) icache_i (
         .clk_i,
         .rst_ni,
-        .flush_i       (invalidate_i),
-        .stall_if_o    (),
+        .flush_i       (flush_cache_i),
+        .stall_if_o    (cache_stall_if),
         .pc_d_i        (pc_d),
-        .instr_o       (),
-        .hit_o         (),
-        .cacheable_if_i(),
-        .valid_if_i    (),
-        .tl_o          (),
-        .tl_i          ()
+        .instr_o       (cache_instr_if),
+        .hit_o         (cache_hit_if),
+        .cacheable_if_i(cacheable_if),
+        .valid_if_i    (valid_if),
+        .tl_o          (cache_req),
+        .tl_i          (cache_rsp)
     );
 
     /* Fetch Target Queue */
